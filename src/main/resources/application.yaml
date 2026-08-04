@@ -1,0 +1,115 @@
+server:
+  port: 8080
+  compression:
+    enabled: true
+  tomcat:
+    accesslog:
+      enabled: true
+      directory: ./WAS_DATA/tomcat_log
+      prefix: access_log
+      suffix: .txt
+      file-date-format: yyyy-MM-dd
+
+security:
+  basic:
+    enable: false
+  ignored: /**
+
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  output:
+    ansi:
+      enabled: always
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ENC(VVrm/pCLyVZSEW4vG5DRt2BiEACoQf1f7DFhWU5G50lksHpdXJBUMiigrL22h07S)
+    password: ENC(ZQN1o+XLVdx5uqNiwbqr7TguoX9V76Cv9bJc4i20LDEqIh1hlPzvTt23GKBNEs8b)
+    url: ENC(vLWPqa+vdcm3YNbvz/yD7W/8cdNH9WWD3+3gg4OD4lsue4xjWsEM26enrbZirYFNc80/a3EkIC/uhj4wT0HI/fUkN0y8JUTHt1CrOhY5EtM=)
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+      location: ./WAS_DATA/multipart/temp
+      file-size-threshold: 1MB
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: false
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    time-zone: Asia/Seoul
+    date-format: yyyy-MM-dd
+    jpa-date-time-format: yyyy-MM-dd HH:mm:ss
+
+mybatis:
+  mapper-locations: classpath:mappers/*.xml
+  type-aliases-package: com.moderntube.moderntubo_backend.model.vo
+  configuration:
+    map-underscore-to-camel-case: true
+  file:
+    path: ./WAS_DATA/mybatis/mybatis-log.txt
+
+app:
+  jwt:
+    header: Authorization
+    header.prefix: Bearer
+    secret: ENC(wibtEkATH5rG4R1r4Osn1JVZovOJC9iPexcM/+DAfn5ozwTNKxykQqkgW3zQo07jlBu6yoSXcVQQaDGOcE15DumWGb0qgw9fjnQ+dlCsCTNg72GJD8H9ogd7FNCflCCQe4Exvre9/ej1jhplaoGV8A==)
+    expiration: 5184000000
+  cors:
+    # 프론트엔드 주소 지정. (예시는 아래처럼)
+    allowed-origins: http://localhost:8080
+  token:
+    email:
+      verification:
+        duration: 5184000000
+    password:
+      reset:
+        duration: 5184000000
+    refresh:
+      duration: 5184000000 # 1달
+  velocity:
+    templates:
+      location: ./WAS_DATA/velocity/templates
+  cache: #Logged out token cache
+    logoutToken:
+      maxSize: 1000
+
+jasypt:
+  encryptor:
+    bean: jasyptStringEncryptor
+
+logging:
+  file:
+    name: ./WAS_DATA/application_log/log.txt
+    append: true
+  level:
+    org.springframework.web: OFF
+    java.sql: OFF
+    jdbc: OFF
+    jdbc.sqlonly: INFO
+    jdbc.sqltiming: OFF
+    jdbc.audit: OFF
+    jdbc.resultset: OFF
+    jdbc.resultsettable: INFO
+    jdbc.connection: OFF
+    com.zaxxer.hikari: INFO
+    com.zaxxer.hikari.HikariConfig: INFO
+    root: INFO
+    catalina: INFO
+  logback:
+    rollingpolicy:
+      file-name-pattern: ./WAS_DATA/application_log/old/log-%d{yyyy-MM-dd}.%i.txt
+      clean-history-on-start: true
+      total-size-cap: 100MB
+      max-history: 30
+      max-file-size: 100MB
+  pattern:
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr([행번호]: %line){red} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%15.15t] %-40.40logger{39} : [행번호] : %line  %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
