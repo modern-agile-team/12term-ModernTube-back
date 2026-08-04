@@ -2,7 +2,6 @@ package com.moderntube.moderntubo_backend.controller.auth;
 
 import com.moderntube.moderntubo_backend.annotation.CurrentUser;
 import com.moderntube.moderntubo_backend.event.OnUserLogoutSuccessEvent;
-import com.moderntube.moderntubo_backend.exception.BadRequestException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
 import com.moderntube.moderntubo_backend.model.payload.request.LogOutRequest;
 import com.moderntube.moderntubo_backend.model.payload.request.UpdateAccountRequest;
@@ -30,9 +29,9 @@ public class UserController {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
-     * 현재 사용자의 프로필 리턴
-     * @param currentUser
-     * @return
+     * 로그인 된 사용자 본인의 프로필 정보를 조회한다.
+     * @param currentUser JWT에서 추출된 인증된 사용자 정보
+     * @return 사용자의 username, email, 권한, id, 활성화 여부, 이름을 담은 UserResponse
      */
     @Operation(
             summary = "내 정보 조회",
@@ -45,6 +44,12 @@ public class UserController {
         return ResponseEntity.ok(userResponse);
     }
 
+    /**
+     * 로그인 된 사용자 본인의 이메일, 비밀번호, 닉네임을 변경한다.
+     * @param currentUser JWT에서 추출된 인증된 사용자 정보, 변경 대상 유저를 식별하는 데 사용
+     * @param updateAccountRequest 현재 비밀번호와 변경할 이메일/비밀번호/닉네임 정보를 담은 요청 객체
+     * @return 변경 처리 결과를 담은 ApiResponse
+     */
     @Operation(summary = "이메일, 비밀번호, 닉네임 재설정.")
     @PostMapping("/me")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
@@ -65,9 +70,9 @@ public class UserController {
 
     /**
      * 로그아웃
-     * @param customUserDetails
-     * @param logOutRequest
-     * @return
+     * @param customUserDetails JWT에서 추출된 인증된 사용자 정보
+     * @param logOutRequest 로그아웃할 기기 정보를 담은 요청 객체
+     * @return 로그아웃 처리 결과를 담은 ApiResponse
      */
     @Operation(summary = "로그아웃")
     @PostMapping("/logout")

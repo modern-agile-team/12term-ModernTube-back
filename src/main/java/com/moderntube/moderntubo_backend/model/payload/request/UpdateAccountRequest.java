@@ -2,7 +2,6 @@ package com.moderntube.moderntubo_backend.model.payload.request;
 
 import com.moderntube.moderntubo_backend.validation.annotation.NullOrNotBlank;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Null;
 import lombok.Getter;
 import lombok.Setter;
 
