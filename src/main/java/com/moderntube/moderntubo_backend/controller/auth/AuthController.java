@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.util.Objects;
+
 @RestController
 @RequestMapping("/api/auth")
 @Slf4j
@@ -68,7 +70,7 @@ public class AuthController {
                 .orElseThrow(() -> new UserLoginException("Couldn't login user [" + loginRequest + "]"));
 
         CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
-        log.info("Logged in User returned [API]: " + customUserDetails.getUsername());
+        log.info("Logged in User returned [API]: " + Objects.requireNonNull(customUserDetails).getUsername());
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

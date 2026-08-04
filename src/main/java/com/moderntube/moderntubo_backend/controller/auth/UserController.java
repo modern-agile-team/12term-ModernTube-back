@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.util.Objects;
+
 @RestController
 @RequestMapping("/api/user")
 @Slf4j
@@ -81,9 +83,9 @@ public class UserController {
         log.info(customUserDetails.toString());
         log.info(logOutRequest.toString());
         userService.logoutUser(customUserDetails, logOutRequest);
-        Object credentials = SecurityContextHolder.getContext().getAuthentication().getCredentials();
+        Object credentials = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getCredentials();
 
-        OnUserLogoutSuccessEvent logoutSuccessEvent = new OnUserLogoutSuccessEvent(customUserDetails.getEmail(), credentials.toString(), logOutRequest);
+        OnUserLogoutSuccessEvent logoutSuccessEvent = new OnUserLogoutSuccessEvent(customUserDetails.getEmail(), Objects.requireNonNull(credentials).toString(), logOutRequest);
         applicationEventPublisher.publishEvent(logoutSuccessEvent);
         return ResponseEntity.ok(new ApiResponse(true, "로그아웃 되었습니다."));
     }
