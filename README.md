@@ -64,9 +64,3 @@ Swagger UI: `http://localhost:8080/swagger-ui.html`
 4. `VIDEOS` 테이블에 업로더(FK)와 함께 저장, 저장된 정보를 응답으로 반환
 
 **알려진 제약**: 메타데이터 추출(ffprobe)이 실패하면 DB에는 기록이 안 남지만, 파일은 이미 디스크에 저장된 뒤라 `streams/`에 고아 파일이 남을 수 있음.
-
-## 알려진 이슈 / TODO
-
-- `net.jodah:expiringmap` 기반 로그아웃 토큰 캐시는 서버 1대 기준으로만 유효 — 다중 서버 환경으로 갈 경우 Redis로 교체 필요
-- `RegistrationRequest.email` 필드가 검증 어노테이션상 null 허용(`@NullOrNotBlank`)으로 되어 있어, 실제로는 필수여야 하는지 확인 필요
-- 이메일 인증(`app.token.email.verification`), 비밀번호 재설정(`app.token.password.reset`) 관련 설정만 있고 실제 기능은 아직 미구현
