@@ -115,20 +115,4 @@ public class AuthController {
         }).orElseThrow(() -> new UserRegistrationException(request.getUsername(), "가입오류"));
     }
 
-    @Operation(summary = "아이디 찾기")
-    @PostMapping("/findById")
-    public ResponseEntity<?> findByUsername() {
-        // TODO - 아이디 찾기 기능 완성코드 작성.
-
-        return ResponseEntity.ok(new ApiResponse(true, "아이디 재설정 완료"));
-    }
-
-//    @Operation(summary = "아이디 찾기")
-//    @PostMapping("/findById")
-//    public ResponseEntity<?> findByPassword() {
-//        // TODO - 비밀번호 찾기 기능 완성코드 작성.
-//
-//        return ResponseEntity.ok(new ApiResponse(true, "비밀번호 재설정 완료"));
-//    }
-
 }
