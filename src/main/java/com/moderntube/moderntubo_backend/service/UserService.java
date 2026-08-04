@@ -15,6 +15,7 @@ package com.moderntube.moderntubo_backend.service;
 
 import com.moderntube.moderntubo_backend.annotation.CurrentUser;
 import com.moderntube.moderntubo_backend.exception.BadRequestException;
+import com.moderntube.moderntubo_backend.exception.ResourceNotFoundException;
 import com.moderntube.moderntubo_backend.exception.UserLogoutException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
 import com.moderntube.moderntubo_backend.model.Role;
@@ -314,8 +315,8 @@ public class UserService {
 //            if (!Objects.equals(registrationRequest.getPassword(), registrationRequest.getPasswordConfirm())) {
 //                throw new BadRequestException("비밀번호가 일치하지 않습니다.");
 //            }
-            User user = new User();
-            user.setId(registrationRequest.getId());
+            User user = userRepository.findById(registrationRequest.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", registrationRequest.getId()));
             user.setUsername(registrationRequest.getUsername());
             if (!registrationRequest.getPassword().isEmpty()) user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
             if (!registrationRequest.getEmail().isEmpty()) user.setEmail(registrationRequest.getEmail());
@@ -329,6 +330,7 @@ public class UserService {
             } else if (roleNum.equals("2")) {
                 roleName = "ADMIN";
             }
+            new HashSet<>(user.getRoles()).forEach(user::removeRole);
             user.addRoles(getUserRoles(roleName));
             userRepository.save(user);
             return true;
