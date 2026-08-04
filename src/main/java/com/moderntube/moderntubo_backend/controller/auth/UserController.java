@@ -2,8 +2,10 @@ package com.moderntube.moderntubo_backend.controller.auth;
 
 import com.moderntube.moderntubo_backend.annotation.CurrentUser;
 import com.moderntube.moderntubo_backend.event.OnUserLogoutSuccessEvent;
+import com.moderntube.moderntubo_backend.exception.BadRequestException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
 import com.moderntube.moderntubo_backend.model.payload.request.LogOutRequest;
+import com.moderntube.moderntubo_backend.model.payload.request.UpdateAccountRequest;
 import com.moderntube.moderntubo_backend.model.payload.response.ApiResponse;
 import com.moderntube.moderntubo_backend.model.payload.response.UserResponse;
 import com.moderntube.moderntubo_backend.service.UserService;
@@ -41,6 +43,24 @@ public class UserController {
         log.info(currentUser.getEmail() + " has role: " + currentUser.getRoles() + " username: " + currentUser.getUsername());
         UserResponse userResponse = new UserResponse(currentUser.getUsername(), currentUser.getEmail(), currentUser.getRoles(), currentUser.getId(), currentUser.getActive(), currentUser.getName());
         return ResponseEntity.ok(userResponse);
+    }
+
+    @Operation(summary = "이메일, 비밀번호, 닉네임 재설정.")
+    @PostMapping("/me")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> updateMyAccount(
+            @CurrentUser CustomUserDetails currentUser,
+            @Valid @RequestBody UpdateAccountRequest updateAccountRequest
+    ) {
+        // TODO - CurrentUser에서는 비밀번호를 가져올수 없음 따로 service를 만들어서 sql에서 유저를 찾고 비밀번호가 기존과 맞는지 비교하는걸 만들어야함.
+        // TODO - 이메일 할수 있다면 검증을 걸치고 기존에 해당 이메일을 사용하고 있는 유저가 있는지 비교를 해줘야함 다행히 AuthService에서 이메일 검증 메서드가 있음.
+
+//        if (!updateAccountRequest.getCurrentPassword().equals(currentUser.getPassword())) {
+//            log.info (currentUser.getPassword());
+//            throw new BadRequestException("기존 비밀번호가 맞지 않습니다.");
+//        }
+
+        return ResponseEntity.ok(new ApiResponse(true, "변경되었습니다."));
     }
 
     /**
