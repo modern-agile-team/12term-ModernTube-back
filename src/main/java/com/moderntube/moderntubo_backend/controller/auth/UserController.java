@@ -2,6 +2,7 @@ package com.moderntube.moderntubo_backend.controller.auth;
 
 import com.moderntube.moderntubo_backend.annotation.CurrentUser;
 import com.moderntube.moderntubo_backend.event.OnUserLogoutSuccessEvent;
+import com.moderntube.moderntubo_backend.exception.BadRequestException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
 import com.moderntube.moderntubo_backend.model.payload.request.LogOutRequest;
 import com.moderntube.moderntubo_backend.model.payload.request.UpdateAccountRequest;
@@ -15,6 +16,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -27,6 +29,7 @@ import java.util.Objects;
 @AllArgsConstructor
 public class UserController {
 
+    private final PasswordEncoder passwordEncoder;
     private final UserService userService;
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -59,14 +62,16 @@ public class UserController {
             @CurrentUser CustomUserDetails currentUser,
             @Valid @RequestBody UpdateAccountRequest updateAccountRequest
     ) {
-        // TODO - CurrentUser에서는 비밀번호를 가져올수 없음 따로 service를 만들어서 sql에서 유저를 찾고 비밀번호가 기존과 맞는지 비교하는걸 만들어야함.
-        // TODO - 이메일 할수 있다면 검증을 걸치고 기존에 해당 이메일을 사용하고 있는 유저가 있는지 비교를 해줘야함 다행히 AuthService에서 이메일 검증 메서드가 있음.
+        if (!passwordEncoder.matches(updateAccountRequest.getCurrentPassword(), currentUser.getPassword())) {
+            throw new BadRequestException("기존 비밀번호와 맞지 않습니다.");
+        } else if (updateAccountRequest.getNewEmail() != null
+                && !updateAccountRequest.getNewEmail().equals(currentUser.getEmail())
+                && userService.existsByEmail(updateAccountRequest.getNewEmail())
+        ) {
+            throw new BadRequestException("이미 존재하는 이메일입니다.");
+        }
 
-//        if (!updateAccountRequest.getCurrentPassword().equals(currentUser.getPassword())) {
-//            log.info (currentUser.getPassword());
-//            throw new BadRequestException("기존 비밀번호가 맞지 않습니다.");
-//        }
-
+        userService.changeUserInfo(currentUser.getId(), updateAccountRequest);
         return ResponseEntity.ok(new ApiResponse(true, "변경되었습니다."));
     }
 

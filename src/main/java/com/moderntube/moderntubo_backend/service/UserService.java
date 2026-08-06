@@ -23,6 +23,7 @@ import com.moderntube.moderntubo_backend.model.User;
 import com.moderntube.moderntubo_backend.model.UserDevice;
 import com.moderntube.moderntubo_backend.model.payload.request.LogOutRequest;
 import com.moderntube.moderntubo_backend.model.payload.request.RegistrationRequest;
+import com.moderntube.moderntubo_backend.model.payload.request.UpdateAccountRequest;
 import com.moderntube.moderntubo_backend.model.payload.request.UserRegisterRequest;
 import com.moderntube.moderntubo_backend.model.payload.response.PagedResponse;
 import com.moderntube.moderntubo_backend.model.payload.response.UserListResponse;
@@ -126,6 +127,28 @@ public class UserService {
         newUser.setName(registerRequest.getName());
         newUser.addRoles(getRolesForNewUser(false));
         return newUser;
+    }
+
+    /**
+     * 사용자의 정보를 수정.
+     * @return
+     */
+    public boolean changeUserInfo(Long userId, UpdateAccountRequest updateAccountRequest) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (updateAccountRequest.getNewEmail() != null) {
+            user.setEmail(updateAccountRequest.getNewEmail());
+        }
+        if (updateAccountRequest.getNewPassword() != null) {
+            user.setPassword(passwordEncoder.encode(updateAccountRequest.getNewPassword()));
+        }
+        if (updateAccountRequest.getNewNickName() != null) {
+            user.setName(updateAccountRequest.getNewNickName());
+        }
+
+        userRepository.save(user);
+        return true;
     }
 
     /**
