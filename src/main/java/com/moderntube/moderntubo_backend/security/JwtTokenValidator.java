@@ -15,7 +15,6 @@ package com.moderntube.moderntubo_backend.security;
 
 import io.jsonwebtoken.*;
 import com.moderntube.moderntubo_backend.cache.LoggedOutJwtTokenCache;
-import com.moderntube.moderntubo_backend.event.OnUserLogoutSuccessEvent;
 import com.moderntube.moderntubo_backend.exception.InvalidTokenRequestException;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 
 @Component
 @Slf4j
@@ -76,11 +74,9 @@ public class JwtTokenValidator {
     }
 
     private void validateTokenIsNotForALoggedOutDevice(String authToken) {
-        OnUserLogoutSuccessEvent previouslyLoggedOutEvent = loggedOutTokenCache.getLogoutEventForToken(authToken);
-        if (previouslyLoggedOutEvent != null) {
-            String userEmail = previouslyLoggedOutEvent.getUserEmail();
-            Date logoutEventDate = previouslyLoggedOutEvent.getEventTime();
-            String errorMessage = String.format("Token corresponds to an already logged out user [%s] at [%s]. Please login again", userEmail, logoutEventDate);
+        String loggedOutUserEmail = loggedOutTokenCache.getLoggedOutUserEmail(authToken);
+        if (loggedOutUserEmail != null) {
+            String errorMessage = String.format("Token corresponds to an already logged out user [%s]. Please login again", loggedOutUserEmail);
             throw new InvalidTokenRequestException("JWT", authToken, errorMessage);
         }
     }

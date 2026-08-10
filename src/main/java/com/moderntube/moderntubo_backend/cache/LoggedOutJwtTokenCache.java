@@ -16,10 +16,9 @@ package com.moderntube.moderntubo_backend.cache;
 import com.moderntube.moderntubo_backend.event.OnUserLogoutSuccessEvent;
 import com.moderntube.moderntubo_backend.security.JwtTokenProvider;
 import lombok.extern.slf4j.Slf4j;
-import net.jodah.expiringmap.ExpiringMap;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -36,16 +35,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class LoggedOutJwtTokenCache {
 
-    private final ExpiringMap<String, OnUserLogoutSuccessEvent> tokenEventMap;
+    private final StringRedisTemplate tokenEventMap;
     private final JwtTokenProvider tokenProvider;
 
     @Autowired
-    public LoggedOutJwtTokenCache(@Value("${app.cache.logoutToken.maxSize}") int maxSize, JwtTokenProvider tokenProvider) {
+    public LoggedOutJwtTokenCache(StringRedisTemplate redisTemplate, JwtTokenProvider tokenProvider) {
         this.tokenProvider = tokenProvider;
-        this.tokenEventMap = ExpiringMap.builder()
-                .variableExpiration()
-                .maxSize(maxSize)
-                .build();
+        this.tokenEventMap = redisTemplate;
     }
 
     @EventListener
@@ -55,19 +51,19 @@ public class LoggedOutJwtTokenCache {
 
     public void markLogoutEventForToken(OnUserLogoutSuccessEvent event) {
         String token = event.getToken();
-        if (tokenEventMap.containsKey(token)) {
+        if (Boolean.TRUE.equals(tokenEventMap.hasKey(token))) {
             log.info(String.format("Log out token for user [%s] is already present in the cache", event.getUserEmail()));
 
         } else {
             Date tokenExpiryDate = tokenProvider.getTokenExpiryFromJWT(token);
             long ttlForToken = getTTLForToken(tokenExpiryDate);
             log.info(String.format("Logout token cache set for [%s] with a TTL of [%s] seconds. Token is due expiry at [%s]", event.getUserEmail(), ttlForToken, tokenExpiryDate));
-            tokenEventMap.put(token, event, ttlForToken, TimeUnit.SECONDS);
+            tokenEventMap.opsForValue().set(token, event.getUserEmail(), ttlForToken, TimeUnit.SECONDS);
         }
     }
 
-    public OnUserLogoutSuccessEvent getLogoutEventForToken(String token) {
-        return tokenEventMap.get(token);
+    public String getLoggedOutUserEmail(String token) {
+        return tokenEventMap.opsForValue().get(token);
     }
 
     private long getTTLForToken(Date date) {

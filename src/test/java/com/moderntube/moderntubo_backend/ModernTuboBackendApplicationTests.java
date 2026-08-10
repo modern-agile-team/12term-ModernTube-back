@@ -5,6 +5,8 @@ import org.jasypt.iv.RandomIvGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+// 여기서 application.yml에 넣을 암호화를 작업.
+
 @SpringBootTest
 class ModernTuboBackendApplicationTests {
 
@@ -14,18 +16,34 @@ class ModernTuboBackendApplicationTests {
 
     @Test
     void jasypt() {
-        String url = "jdbc:mysql://rockylinux-9:3306/modernTubo_db";
-        String username = "modernTuboUser";
-        String password = "modernTuboUser";
-        String secret = "9f3a7c1e4b2d6f8091c3e5a7b9d1f3e5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7";
+        // DB
+        String url = "";
+        String username = "";
+        String password = "";
+
+        // JWT
+        String secret = "";
+
+        // Mail
+        String mailPassword = "";
+        String mailId = "";
+
+        // redis
+        String redisPassword = "";
+        String redisHost = "";
+
         System.out.println("url : " + jasyptEncoding(url));
         System.out.println("username : " + jasyptEncoding(username));
         System.out.println("password : " + jasyptEncoding(password));
         System.out.println("secret : " + jasyptEncoding(secret));
+        System.out.println("mailPassword : " + jasyptEncoding(mailPassword));
+        System.out.println("mailId : " + jasyptEncoding(mailId));
+        System.out.println("redisPassword : " + jasyptEncoding(redisPassword));
+        System.out.println("redisHost : " + jasyptEncoding(redisHost));
     }
 
     public String jasyptEncoding(String value) {
-        String key = "jasyptStringEncryptorKey";
+        String key = "";
         StandardPBEStringEncryptor pbeStringEncryptor = new StandardPBEStringEncryptor();
         pbeStringEncryptor.setAlgorithm("PBEWITHHMACSHA512ANDAES_256");
         pbeStringEncryptor.setPassword(key);
