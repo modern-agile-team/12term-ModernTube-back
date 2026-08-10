@@ -176,7 +176,7 @@ public class AuthService {
     public Optional<String> refreshJwtToken(TokenRefreshRequest tokenRefreshRequest) {
         String requestRefreshToken = tokenRefreshRequest.getRefreshToken();
 
-        return Optional.of(refreshTokenService.findByToken(requestRefreshToken)
+        return refreshTokenService.findByToken(requestRefreshToken)
                 .map(refreshToken -> {
                     refreshTokenService.verifyExpiration(refreshToken);
                     userDeviceService.verifyRefreshAvailability(refreshToken);
@@ -185,8 +185,8 @@ public class AuthService {
                 })
                 .map(RefreshToken::getUserDevice)
                 .map(UserDevice::getUser)
-                .map(User::getId).map(this::generateTokenFromUserId))
-                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "갱신 토큰이 데이터베이스에 없습니다. 다시 로그인 해 주세요."));
+                .map(User::getId)
+                .map(this::generateTokenFromUserId);
     }
 
 }

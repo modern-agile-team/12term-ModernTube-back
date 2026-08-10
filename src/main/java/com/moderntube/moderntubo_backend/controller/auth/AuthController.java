@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.util.Objects;
+
 @RestController
 @RequestMapping("/api/auth")
 @Slf4j
@@ -29,9 +31,9 @@ public class AuthController {
     private final JwtTokenProvider tokenProvider;
 
     /**
-     * 이에일 사용여부 확인 메서드
-     * @param email
-     * @return
+     * 이메일 사용여부 확인 메서드
+     * @param email 중복 확인할 이메일 주소
+     * @return 이메일 사용 여부와 안내 메시지를 담은 ApiResponse
      */
     @Operation(summary = "이메일 사용 여부")
     @GetMapping("/check/email")
@@ -42,8 +44,8 @@ public class AuthController {
 
     /**
      * username 사용여부 확인
-     * @param username
-     * @return
+     * @param username 중복 확인할 아이디
+     * @return 아이디 사용 여부와 안내 메시지를 담은 ApiResponse
      */
     @Operation(summary = "아이디 사용여부 확인")
     @GetMapping("/check/username")
@@ -55,8 +57,8 @@ public class AuthController {
 
     /**
      * 로그인 성공시 access token, refresh token 반환
-     * @param loginRequest
-     * @return
+     * @param loginRequest 로그인에 필요한 아이디, 비밀번호, 기기 정보를 담은 요청 객체
+     * @return 발급된 accessToken과 refreshToken을 담은 JwtAuthenticationResponse
      */
     @Operation(summary = "로그인")
     @PostMapping("/login")
@@ -68,7 +70,7 @@ public class AuthController {
                 .orElseThrow(() -> new UserLoginException("Couldn't login user [" + loginRequest + "]"));
 
         CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
-        log.info("Logged in User returned [API]: " + customUserDetails.getUsername());
+        log.info("Logged in User returned [API]: " + Objects.requireNonNull(customUserDetails).getUsername());
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -83,8 +85,8 @@ public class AuthController {
 
     /**
      * 특정 장치에 대한 refresh token 을 사용하여 만료된 jwt token 을 갱신 후 새로운 token 을 반환
-     * @param tokenRefreshRequest
-     * @return
+     * @param tokenRefreshRequest 토큰 갱신에 사용할 refresh token을 담은 요청 객체
+     * @return 재발급된 accessToken과 기존 refreshToken을 담은 JwtAuthenticationResponse
      */
     @Operation(summary = "리프레시 토큰")
     @PostMapping("/refresh")
@@ -103,8 +105,8 @@ public class AuthController {
 
     /**
      * 회원 가입
-     * @param request
-     * @return
+     * @param request 회원가입에 필요한 아이디, 이메일, 비밀번호, 이름을 담은 요청 객체
+     * @return 가입 처리 결과를 담은 ApiResponse
      */
     @Operation(summary = "회원가입")
     @PostMapping("/register")
@@ -114,21 +116,5 @@ public class AuthController {
             return ResponseEntity.ok(new ApiResponse(true, "등록되었습니다."));
         }).orElseThrow(() -> new UserRegistrationException(request.getUsername(), "가입오류"));
     }
-
-    @Operation(summary = "아이디 찾기")
-    @PostMapping("/findById")
-    public ResponseEntity<?> findByUsername() {
-        // TODO - 아이디 찾기 기능 완성코드 작성.
-
-        return ResponseEntity.ok(new ApiResponse(true, "아이디 재설정 완료"));
-    }
-
-//    @Operation(summary = "아이디 찾기")
-//    @PostMapping("/findById")
-//    public ResponseEntity<?> findByPassword() {
-//        // TODO - 비밀번호 찾기 기능 완성코드 작성.
-//
-//        return ResponseEntity.ok(new ApiResponse(true, "비밀번호 재설정 완료"));
-//    }
 
 }

@@ -61,19 +61,19 @@ app:
     header: Authorization
     header.prefix: Bearer
     secret: ENC(wibtEkATH5rG4R1r4Osn1JVZovOJC9iPexcM/+DAfn5ozwTNKxykQqkgW3zQo07jlBu6yoSXcVQQaDGOcE15DumWGb0qgw9fjnQ+dlCsCTNg72GJD8H9ogd7FNCflCCQe4Exvre9/ej1jhplaoGV8A==)
-    expiration: 5184000000
+    expiration: 1800000 # 30분 (access token)
   cors:
     # 프론트엔드 주소 지정. (예시는 아래처럼)
     allowed-origins: http://localhost:8080
   token:
     email:
       verification:
-        duration: 5184000000
+        duration: 259200000 # 3일
     password:
       reset:
-        duration: 5184000000
+        duration: 900000 # 15분
     refresh:
-      duration: 5184000000 # 1달
+      duration: 1209600000 # 14일
   velocity:
     templates:
       location: ./WAS_DATA/velocity/templates
