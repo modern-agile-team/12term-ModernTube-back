@@ -22,6 +22,22 @@ spring:
   output:
     ansi:
       enabled: always
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ENC(oTrH4A9tPTrP3W3ljg1hNsiQmdXAb8NTA/Rv6W1V3KuSo6ohhITUwLQD4c6Pq2jk)
+    password: ENC(2+pV6eXwPBdrr7IWe3dbOzjy9nmp2y/n3FxVsAU9qnJvvPgQAWH50aAgkJlQRKMapDMNkO440yo9lLGEr0eYKw==)
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  data:
+    redis:
+      host: ENC(3LThWiauRko/vXjzko4dbwexXUHfz6Sbq7+cMD5KMsq2tJQyKOczMWP6FV/wQf64)
+      port: 6379
+      password: ENC(6NzGgQyPUpF3evqYbk9f9t9wOIkL2ZKfTUHbn+ljMiscFkE5SU8imX3Z9jsDc01X)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ENC(VVrm/pCLyVZSEW4vG5DRt2BiEACoQf1f7DFhWU5G50lksHpdXJBUMiigrL22h07S)

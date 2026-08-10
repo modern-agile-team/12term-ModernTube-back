@@ -117,4 +117,28 @@ public class AuthController {
         }).orElseThrow(() -> new UserRegistrationException(request.getUsername(), "가입오류"));
     }
 
+    /**
+     * 이메일로 인증번호 발송
+     * @param email 인증번호를 받을 이메일
+     * @return 발송 처리 결과를 담은 ApiResponse
+     */
+    @Operation(summary = "메일 인증번호를 전송")
+    @PostMapping("/send-code")
+    public ResponseEntity<?> sendCodeToUser(@Parameter(description = "인증번호를 받을 이메일", required = true) @RequestParam("email") String email) {
+        authService.sendVerificationCode(email);
+        return ResponseEntity.ok(new ApiResponse(true, "전송되었습니다."));
+    }
+
+    /**
+     * 이메일 인증번호 검증
+     * @param verifyCodeRequest 이메일과 인증번호를 담은 요청 객체
+     * @return 검증 처리 결과를 담은 ApiResponse
+     */
+    @Operation(summary = "메일 인증번호 검증")
+    @PostMapping("/verify-code")
+    public ResponseEntity<?> verifyCode(@Valid @RequestBody VerifyCodeRequest verifyCodeRequest) {
+        authService.verifyEmailCode(verifyCodeRequest.getEmail(), verifyCodeRequest.getCode());
+        return ResponseEntity.ok(new ApiResponse(true, "인증이 완료되었습니다."));
+    }
+
 }

@@ -13,8 +13,10 @@
  */
 package com.moderntube.moderntubo_backend.service;
 
+import com.moderntube.moderntubo_backend.cache.EmailVerificationCache;
+import com.moderntube.moderntubo_backend.cache.LoginAttemptCache;
+import com.moderntube.moderntubo_backend.exception.BadRequestException;
 import com.moderntube.moderntubo_backend.exception.ResourceAlreadyInUseException;
-import com.moderntube.moderntubo_backend.exception.TokenRefreshException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
 import com.moderntube.moderntubo_backend.model.User;
 import com.moderntube.moderntubo_backend.model.UserDevice;
@@ -23,14 +25,17 @@ import com.moderntube.moderntubo_backend.model.payload.request.RegistrationReque
 import com.moderntube.moderntubo_backend.model.payload.request.TokenRefreshRequest;
 import com.moderntube.moderntubo_backend.model.token.RefreshToken;
 import com.moderntube.moderntubo_backend.security.JwtTokenProvider;
+import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -46,6 +51,35 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final UserDeviceService userDeviceService;
+    private final MailService mailService;
+    private final EmailVerificationCache emailVerificationCache;
+    private final LoginAttemptCache loginAttemptCache;
+
+    /**
+     * 이메일 인증번호 발송
+     * @param email 인증번호를 받을 이메일
+     */
+    public void sendVerificationCode(String email) {
+        try {
+            mailService.sendVerificationEmail(email);
+        } catch (MessagingException | IOException e) {
+            log.error("이메일 발송 실패: {}", email, e);
+            throw new BadRequestException("이메일 발송에 실패했습니다.");
+        }
+    }
+
+    /**
+     * 이메일 인증번호 검증 후 이메일 인증 완료 처리
+     * @param email 인증할 이메일
+     * @param code 사용자가 입력한 인증번호
+     */
+    public void verifyEmailCode(String email, String code) {
+        if (!emailVerificationCache.verifyCode(email, code)) {
+            throw new BadRequestException("인증번호가 일치하지 않거나 만료되었습니다.");
+        }
+        userService.markEmailVerified(email);
+        emailVerificationCache.removeCode(email);
+    }
 
     /**
      * 사용자 등록

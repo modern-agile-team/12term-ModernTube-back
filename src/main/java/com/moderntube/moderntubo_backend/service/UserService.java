@@ -76,6 +76,17 @@ public class UserService {
     }
 
     /**
+     * 이메일 인증 완료 처리
+     * @param email 인증 완료할 유저의 이메일
+     */
+    public void markEmailVerified(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        user.setEmailVerified(true);
+        userRepository.save(user);
+    }
+
+    /**
      * id로 찾기
      * @param Id
      * @return
@@ -123,7 +134,7 @@ public class UserService {
         newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         newUser.setUsername(registerRequest.getUsername());
         newUser.setActive(true);
-        newUser.setEmailVerified(true);
+        newUser.setEmailVerified(false);
         newUser.setName(registerRequest.getName());
         newUser.addRoles(getRolesForNewUser(false));
         return newUser;
