@@ -12,6 +12,8 @@
 - **springdoc-openapi 2.8.5** — Swagger UI / OpenAPI 3 문서
 - **jasypt-spring-boot-starter 4.0.4** — `application.yaml` 민감 정보 암호화
 - **net.bramp.ffmpeg 0.9.2** (+ 시스템 ffmpeg/ffprobe) — 업로드된 영상의 메타데이터(길이/해상도/코덱/비트레이트) 추출
+- **spring-boot-starter-mail** — Gmail SMTP를 통한 이메일 인증번호 발송
+- **Spring Data Redis** — 이메일 인증번호/로그인 시도 제한 등 TTL 기반 데이터 저장
 
 ## 실행 전 준비
 
@@ -22,6 +24,8 @@
    JASYPT_ENCRYPTOR_PASSWORD=실제비밀번호 ./gradlew bootRun
    ```
    (또는 `-Djasypt.encryptor.password=` VM 옵션)
+4. **Redis** — 이메일 인증번호/로그인 시도 제한 캐시 저장소로 사용. `spring.data.redis.host/port/password`에 접속 정보 설정 필요
+5. **Gmail SMTP 앱 비밀번호** — 이메일 인증번호 발송용. `spring.mail.username/password`에 설정 (일반 계정 비밀번호가 아닌 앱 비밀번호 사용)
 
 ## 인증 구조
 
@@ -29,6 +33,8 @@
 - accessToken은 `Authorization: Bearer <token>` 헤더로 전달
 - `deviceId`/`deviceType`/`notificationToken`으로 구성된 `DeviceInfo`를 로그인 요청에 같이 보내야 함 — 기기별로 refresh token을 독립적으로 관리하기 위함 (다중 기기 로그인 지원, 한 기기 로그아웃이 다른 기기에 영향 없음)
 - 로그아웃 시 해당 토큰을 `LoggedOutJwtTokenCache`(현재 인메모리 `ExpiringMap` 기반)에 등록해 만료 전에도 재사용을 막음. **다중 서버로 확장 시 Redis로 교체 필요** (지금은 서버 1대 기준)
+- 회원가입 직후에는 `isEmailVerified = false` 상태이며, 이메일 인증번호(`/api/auth/send-code`, `/api/auth/verify-code`)로 인증을 완료해야 로그인 가능 (`CustomUserDetails.isEnabled()`가 `emailVerified`를 체크해서 Spring Security가 자동으로 로그인을 막음)
+- 로그인 실패가 5회 누적되면 5분간 해당 계정 로그인이 차단됨 (`LoginAttemptCache`, Redis 기반)
 
 ## API 엔드포인트
 
@@ -39,6 +45,8 @@
 | POST | `/api/auth/login` | X | 로그인 (accessToken/refreshToken 발급) |
 | POST | `/api/auth/refresh` | X | refreshToken으로 accessToken 재발급 |
 | POST | `/api/auth/register` | X | 회원가입 |
+| POST | `/api/auth/send-code` | X | 이메일 인증번호 발송 (60초 재전송 쿨다운) |
+| POST | `/api/auth/verify-code` | X | 이메일 인증번호 검증 (성공 시 `isEmailVerified = true`) |
 | GET | `/api/user/me` | O (USER/ADMIN) | 내 프로필 조회 |
 | POST | `/api/user/logout` | O | 로그아웃 |
 | GET | `/api/member/list` | O (SYSTEM) | 회원 목록 검색 (관리자) |
