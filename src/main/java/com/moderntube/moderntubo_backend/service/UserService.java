@@ -114,8 +114,8 @@ public class UserService {
 
     /**
      * 사용자 생성
-     * @param registerRequest
-     * @return
+     * @param registerRequest 생성할 방식을 object로 받아서 생성.
+     * @return 완성한 object를 registerUser로 반환.
      */
     public User createUser(RegistrationRequest registerRequest) {
         User newUser = new User();
@@ -130,8 +130,10 @@ public class UserService {
     }
 
     /**
-     * 사용자의 정보를 수정.
-     * @return
+     * 사용자의 정보를 변경.
+     * @param userId 변경할 유저의 고유 ID.
+     * @param updateAccountRequest 변경할 내용을 object형으로 받기. null이 있다면 변경을 하지 않는다.
+     * @return 변경 완료 여부를 boolean으로 반환
      */
     public boolean changeUserInfo(Long userId, UpdateAccountRequest updateAccountRequest) {
         User user = userRepository.findById(userId)
