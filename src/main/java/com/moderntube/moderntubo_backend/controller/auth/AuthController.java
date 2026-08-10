@@ -58,7 +58,7 @@ public class AuthController {
     /**
      * 로그인 성공시 access token, refresh token 반환
      * @param loginRequest 로그인에 필요한 아이디, 비밀번호, 기기 정보를 담은 요청 객체
-     * @return 발급된 accessToken과 refreshToken을 담은 JwtAuthenticationResponse
+     * @return
      */
     @Operation(summary = "로그인")
     @PostMapping("/login")

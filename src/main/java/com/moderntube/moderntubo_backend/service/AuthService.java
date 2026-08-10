@@ -139,12 +139,22 @@ public class AuthService {
 
     /**
      * 로그인 수행
-     * @param loginRequest
+     * @param loginRequest 로그인 정보를 받기
      * @return
      */
     public Optional<Authentication> authenticateUser(LoginRequest loginRequest) {
-        return Optional.of(authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(),
-                loginRequest.getPassword())));
+        String username = loginRequest.getUsername();
+        loginAttemptCache.checkBlocked(username);
+
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, loginRequest.getPassword()));
+            loginAttemptCache.resetFailCount(username);
+            return Optional.of(authentication);
+        } catch (AuthenticationException e) {
+            loginAttemptCache.increaseFailCount(username);
+            throw e;
+        }
     }
 
 
