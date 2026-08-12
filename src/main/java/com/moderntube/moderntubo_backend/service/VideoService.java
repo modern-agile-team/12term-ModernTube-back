@@ -1,5 +1,6 @@
 package com.moderntube.moderntubo_backend.service;
 
+import com.moderntube.moderntubo_backend.exception.ResourceNotFoundException;
 import com.moderntube.moderntubo_backend.exception.UploadException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
 import com.moderntube.moderntubo_backend.model.Video;
@@ -12,6 +13,10 @@ import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
 import net.bramp.ffmpeg.shared.CodecType;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourceRegion;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -96,5 +101,23 @@ public class VideoService {
             log.error("메타데이터 추출 실패: {}", filename, err);
             throw new UploadException("메타데이터 추출 중 오류가 발생했습니다.");
         }
+    }
+
+    public ResourceRegion createRegion(Long id, HttpHeaders headers) {
+        Video video = videoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", id));
+
+        Resource videoResource = new FileSystemResource(video.getFilePath());
+
+        long contentLength;
+        try {
+            contentLength = videoResource.contentLength();
+        } catch (IOException e) {
+            throw new ResourceNotFoundException("Video", "id", id);
+        }
+
+        return headers.getRange().stream().findFirst()
+                .map(range -> range.toResourceRegion(videoResource))
+                .orElseGet(() -> new ResourceRegion(videoResource, 0, Math.min(1_000_000, contentLength)));
     }
 }
