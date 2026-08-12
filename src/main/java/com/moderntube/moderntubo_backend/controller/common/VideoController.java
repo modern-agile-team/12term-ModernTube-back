@@ -1,9 +1,12 @@
 package com.moderntube.moderntubo_backend.controller.common;
 
 import com.moderntube.moderntubo_backend.annotation.CurrentUser;
+import com.moderntube.moderntubo_backend.exception.ResourceNotFoundException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
+import com.moderntube.moderntubo_backend.model.Video;
 import com.moderntube.moderntubo_backend.model.payload.response.ApiResponse;
 import com.moderntube.moderntubo_backend.model.payload.response.VideoUploadResponse;
+import com.moderntube.moderntubo_backend.repository.VideoRepository;
 import com.moderntube.moderntubo_backend.service.VideoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,21 +14,24 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourceRegion;
+import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/videos")
 @AllArgsConstructor
+@Slf4j
 public class VideoController {
 
     private final VideoService videoService;
+    private final VideoRepository videoRepository;
 
     @Operation(summary = "동영상을 업로드")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -37,5 +43,32 @@ public class VideoController {
             @CurrentUser CustomUserDetails currentUser) {
         VideoUploadResponse response = videoService.uploadVideo(file, currentUser);
         return ResponseEntity.ok(new ApiResponse(true, response));
+    }
+
+    @Operation(summary = "동영상 스트리밍 (Range 요청 기반)")
+    @GetMapping("/{id}/stream")
+    public ResponseEntity<ResourceRegion> streamVideo(
+            @Parameter(description = "스트리밍할 동영상 ID", required = true)
+            @PathVariable Long id,
+            @RequestHeader HttpHeaders headers) {
+        // DB에서 request로 받은 id를 가지고 동영상을 조회후 해당 정보를 video로 저장.
+        Video video = videoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", id));
+
+        Resource videoResource = new FileSystemResource(video.getFilePath());
+        long contentLength;
+        try {
+            contentLength = videoResource.contentLength();
+        } catch (IOException e) {
+            throw new ResourceNotFoundException("Video", "id", id);
+        }
+
+        ResourceRegion region = headers.getRange().stream().findFirst()
+                .map(range -> range.toResourceRegion(videoResource))
+                .orElseGet(() -> new ResourceRegion(videoResource, 0, Math.min(1_000_000, contentLength)));
+
+        return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                .contentType(MediaTypeFactory.getMediaType(videoResource).orElse(MediaType.APPLICATION_OCTET_STREAM))
+                .body(region);
     }
 }
