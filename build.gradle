@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.modernTube'
-version = '0.0.1-SNAPSHOT'
+version = '0.2.1'
 description = 'modernTubo_Backend'
 
 java {

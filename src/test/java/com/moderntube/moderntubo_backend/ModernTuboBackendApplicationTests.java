@@ -2,6 +2,7 @@ package com.moderntube.moderntubo_backend;
 
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.iv.RandomIvGenerator;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -15,31 +16,30 @@ class ModernTuboBackendApplicationTests {
     }
 
     @Test
+    @Disabled
     void jasypt() {
         // DB
         String url = "";
+        String urlLocalhost = "";
         String username = "";
         String password = "";
 
         // JWT
         String secret = "";
 
-        // Mail
-        String mailPassword = "";
-        String mailId = "";
-
         // redis
         String redisPassword = "";
         String redisHost = "";
+        String redisHostLocalhost = "";
 
         System.out.println("url : " + jasyptEncoding(url));
+        System.out.println("urlLocalhost : " + jasyptEncoding(urlLocalhost));
         System.out.println("username : " + jasyptEncoding(username));
         System.out.println("password : " + jasyptEncoding(password));
         System.out.println("secret : " + jasyptEncoding(secret));
-        System.out.println("mailPassword : " + jasyptEncoding(mailPassword));
-        System.out.println("mailId : " + jasyptEncoding(mailId));
         System.out.println("redisPassword : " + jasyptEncoding(redisPassword));
         System.out.println("redisHost : " + jasyptEncoding(redisHost));
+        System.out.println("redisHostLocalhost : " + jasyptEncoding(redisHostLocalhost));
     }
 
     public String jasyptEncoding(String value) {
