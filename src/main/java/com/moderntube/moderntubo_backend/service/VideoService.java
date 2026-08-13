@@ -7,12 +7,12 @@ import com.moderntube.moderntubo_backend.model.Video;
 import com.moderntube.moderntubo_backend.model.payload.response.VideoUploadResponse;
 import com.moderntube.moderntubo_backend.repository.UserRepository;
 import com.moderntube.moderntubo_backend.repository.VideoRepository;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.probe.FFmpegStream;
 import net.bramp.ffmpeg.shared.CodecType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourceRegion;
@@ -27,13 +27,20 @@ import java.nio.file.Paths;
 
 @Service
 @Slf4j
-@AllArgsConstructor
 public class VideoService {
 
     private static final String STORAGE_DIR = "./streams";
 
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
+    private final String ffprobePath;
+
+    public VideoService(VideoRepository videoRepository, UserRepository userRepository,
+                         @Value("${app.ffmpeg.ffprobe-path}") String ffprobePath) {
+        this.videoRepository = videoRepository;
+        this.userRepository = userRepository;
+        this.ffprobePath = ffprobePath;
+    }
 
     public VideoUploadResponse uploadVideo(MultipartFile file, CustomUserDetails currentUser) {
         if (file.isEmpty()) {
@@ -74,7 +81,7 @@ public class VideoService {
 
     private Video buildVideo(String filename, MultipartFile file, Path videoPath, CustomUserDetails currentUser) {
         try {
-            FFprobe ffprobe = new FFprobe("/opt/homebrew/bin/ffprobe");
+            FFprobe ffprobe = new FFprobe(ffprobePath);
             FFmpegProbeResult result = ffprobe.probe(videoPath.toString());
 
             FFmpegStream videoStream = result.getStreams().stream()
