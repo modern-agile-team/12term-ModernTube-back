@@ -18,3 +18,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+app:
+  ffmpeg:
+    ffprobe-path: /usr/bin/ffprobe
