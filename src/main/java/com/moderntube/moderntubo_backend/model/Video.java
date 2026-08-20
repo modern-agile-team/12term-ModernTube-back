@@ -56,6 +56,9 @@ public class Video extends DateAudit {
     @Column(name = "IS_ACTIVE", nullable = false)
     private boolean isActive;
 
+    @Column(name = "VIEWCOUNT", nullable = false)
+    private Long viewCount;
+
     public Long getVideoId() {
         return videoId;
     }
