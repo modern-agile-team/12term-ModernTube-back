@@ -53,9 +53,13 @@ public class VideoService {
         this.ffprobePath = ffprobePath;
     }
 
-    public VideoUploadResponse uploadVideo(MultipartFile file, CustomUserDetails currentUser) {
+    public VideoUploadResponse uploadVideo(MultipartFile file, String title, CustomUserDetails currentUser) {
         if (file.isEmpty()) {
             throw new UploadException("파일이 없습니다.");
+        }
+
+        if (title == null || title.isBlank()) {
+            throw new UploadException("제목을 입력해주세요.");
         }
 
         String contentType = file.getContentType();
@@ -76,7 +80,7 @@ public class VideoService {
 
         log.info("동영상 업로드 완료: {}", filename);
 
-        Video video = buildVideo(filename, file, targetPath, currentUser);
+        Video video = buildVideo(filename, title, file, targetPath, currentUser);
         Video savedVideo = videoRepository.save(video);
 
         return new VideoUploadResponse(
@@ -90,7 +94,7 @@ public class VideoService {
         );
     }
 
-    private Video buildVideo(String filename, MultipartFile file, Path videoPath, CustomUserDetails currentUser) {
+    private Video buildVideo(String filename, String title, MultipartFile file, Path videoPath, CustomUserDetails currentUser) {
         try {
             FFprobe ffprobe = new FFprobe(ffprobePath);
             FFmpegProbeResult result = ffprobe.probe(videoPath.toString());
@@ -101,7 +105,7 @@ public class VideoService {
                     .orElseThrow(() -> new UploadException("영상 스트림을 찾을수 없습니다."));
 
             Video video = new Video();
-            video.setVideoName(filename);
+            video.setVideoName(title);
             video.setOriginalFilename(file.getOriginalFilename());
             video.setFilePath(videoPath.toString());
             video.setUploader(userRepository.getReferenceById(currentUser.getId()));

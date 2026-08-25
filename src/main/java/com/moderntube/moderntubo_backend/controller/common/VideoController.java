@@ -14,12 +14,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.support.ResourceRegion;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/videos")
 @AllArgsConstructor
 @Slf4j
+@Validated
 public class VideoController {
 
     private final VideoService videoService;
@@ -39,9 +43,11 @@ public class VideoController {
     public ResponseEntity<?> uploadVideo(
             @Parameter(description = "업로드할 동영상 파일", required = true)
             @RequestParam("video") MultipartFile file,
+            @Parameter(description = "동영상 제목", required = true)
+            @RequestParam("title") @NotBlank(message = "제목을 입력해주세요.") String title,
             @CurrentUser CustomUserDetails currentUser
     ) {
-        VideoUploadResponse response = videoService.uploadVideo(file, currentUser);
+        VideoUploadResponse response = videoService.uploadVideo(file, title, currentUser);
         return ResponseEntity.ok(new ApiResponse(true, response));
     }
 
