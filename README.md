@@ -53,7 +53,12 @@
 | GET | `/api/member/roleList` | O (SYSTEM) | 특정 유저 권한 조회 (관리자) |
 | POST | `/api/member/save` | O (SYSTEM) | 회원 등록/수정 (관리자) |
 | GET | `/api/member/check/username`, `/check/email` | O (SYSTEM) | 관리자용 중복 확인 |
-| POST | `/api/videos/upload` | O (USER/ADMIN) | 동영상 업로드 + 메타데이터 추출 + DB 저장 |
+| POST | `/api/videos/upload` | O (USER/ADMIN) | 동영상 업로드 (제목 입력 필수) + 메타데이터 추출 + DB 저장 |
+| GET | `/api/videos/{id}` | X | 동영상 상세 조회 (제목/업로더/메타데이터/조회수/좋아요수/댓글수), 호출 시 조회수 증가 |
+| GET | `/api/videos/{id}/stream` | X | 동영상 스트리밍 (Range 요청 기반) |
+| GET | `/api/videos/{id}/comments` | X | 댓글 목록 조회 (페이징) |
+| POST | `/api/videos/{id}/comments` | O (USER/ADMIN) | 댓글 작성 |
+| POST | `/api/videos/{id}/like` | O (USER/ADMIN) | 좋아요 토글 (누르면 등록, 다시 누르면 취소) |
 
 Swagger UI: `http://localhost:8080/swagger-ui.html`
 
@@ -66,9 +71,16 @@ Swagger UI: `http://localhost:8080/swagger-ui.html`
 
 ## Video 업로드 흐름
 
-1. `POST /api/videos/upload` — 로그인 필요, `video/*` 타입만 허용 (현재 최대 1GB, `application.yaml`의 `multipart.max-file-size`로 조정 가능)
-2. `./streams` 폴더에 `{timestamp}_{원본파일명}`으로 저장
+1. `POST /api/videos/upload` — 로그인 필요, 제목(`title`)과 함께 `video/*` 타입만 허용 (현재 최대 1GB, `application.yaml`의 `multipart.max-file-size`로 조정 가능)
+2. `./streams` 폴더에 `{timestamp}_{원본파일명}`으로 저장 (디스크 저장용 파일명이며, 사용자에게 노출되는 제목과는 별개)
 3. ffprobe로 duration/width/height/codec/bitrate 추출
 4. `VIDEOS` 테이블에 업로더(FK)와 함께 저장, 저장된 정보를 응답으로 반환
 
 **알려진 제약**: 메타데이터 추출(ffprobe)이 실패하면 DB에는 기록이 안 남지만, 파일은 이미 디스크에 저장된 뒤라 `streams/`에 고아 파일이 남을 수 있음.
+
+## 동영상 상세 조회 / 댓글 / 좋아요
+
+- `GET /api/videos/{id}` 호출 시 제목, 업로더, 메타데이터, 조회수, 좋아요수, 댓글수를 함께 반환하며, 호출될 때마다 조회수가 1씩 증가함 (새로고침 스팸으로 인한 중복 카운트 방지 로직은 아직 없음)
+- 댓글은 `Comment` 엔티티(video FK, user FK, content)로 관리하며, 상세 조회 API와 분리된 페이징 API(`GET /api/videos/{id}/comments`)로 목록을 제공
+- 좋아요는 `VideoLike`(video_id + user_id 복합키)로 중복 좋아요를 방지하며, `POST /api/videos/{id}/like`로 토글(누르면 등록, 다시 누르면 취소) 처리
+- 좋아요/댓글 개수는 별도 컬럼 없이 매번 COUNT 쿼리로 집계 (트래픽이 늘어나면 비정규화 고려 필요)
