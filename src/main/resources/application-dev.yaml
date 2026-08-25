@@ -1,0 +1,24 @@
+spring:
+  data:
+    redis:
+      host: ENC(V7fUNSfQLFwr+y7pr0yqLLzah82J2pVnpbi4cllhonKM9PmPHBLrHVAenOAwhems)
+      port: 6379
+      password: ENC(lTjzrWP7PZds21KYenlp0ZBgsQLJNvaeXXfVnJ858RVLwB7iUxJbYv/OqaIqG6mG)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ENC(l3DKkA5HjpGi/58cQ9cQNU9p29xTN2vlqIIxw9kFbEHrV+ZcJEWn6seA1yMjN7MH)
+    password: ENC(c7fkLk4ia8YVLPJ9lf0dY+BY2B1vHgsqhJzIIbgO+k5LXJfoHUeLGkKqOuHtCkH7)
+    url: ENC(5GNJxG0qqMtajwz0XLAdfPn1QsXPRbTWYVxZD3BRF3a1Ec6rWCl3k7bPwh0F6zCBBwIlTT7bXeJgKboP1vuLfVlJDkf5/BtSZcNGDHnrd1U=)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: false
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+
+app:
+  ffmpeg:
+    ffprobe-path: /opt/homebrew/bin/ffprobe

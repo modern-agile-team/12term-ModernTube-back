@@ -56,6 +56,9 @@ public class Video extends DateAudit {
     @Column(name = "IS_ACTIVE", nullable = false)
     private boolean isActive;
 
+    @Column(name = "VIEW_COUNT", nullable = false)
+    private Long viewCount = 0L;
+
     public Long getVideoId() {
         return videoId;
     }
@@ -158,5 +161,13 @@ public class Video extends DateAudit {
 
     public void setActive(boolean active) {
         isActive = active;
+    }
+
+    public Long getViewCount() {
+        return viewCount;
+    }
+
+    public void setViewCount(Long viewCount) {
+        this.viewCount = viewCount;
     }
 }
