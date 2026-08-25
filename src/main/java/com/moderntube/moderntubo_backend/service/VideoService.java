@@ -4,8 +4,12 @@ import com.moderntube.moderntubo_backend.exception.ResourceNotFoundException;
 import com.moderntube.moderntubo_backend.exception.UploadException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
 import com.moderntube.moderntubo_backend.model.Video;
+import com.moderntube.moderntubo_backend.model.VideoLike;
+import com.moderntube.moderntubo_backend.model.payload.response.VideoDetailResponse;
 import com.moderntube.moderntubo_backend.model.payload.response.VideoUploadResponse;
+import com.moderntube.moderntubo_backend.repository.CommentRepository;
 import com.moderntube.moderntubo_backend.repository.UserRepository;
+import com.moderntube.moderntubo_backend.repository.VideoLikeRepository;
 import com.moderntube.moderntubo_backend.repository.VideoRepository;
 import lombok.extern.slf4j.Slf4j;
 import net.bramp.ffmpeg.FFprobe;
@@ -33,12 +37,19 @@ public class VideoService {
 
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
+    private final VideoLikeRepository videoLikeRepository;
     private final String ffprobePath;
 
-    public VideoService(VideoRepository videoRepository, UserRepository userRepository,
-                         @Value("${app.ffmpeg.ffprobe-path}") String ffprobePath) {
+    public VideoService(
+            VideoRepository videoRepository, UserRepository userRepository,
+            CommentRepository commentRepository, VideoLikeRepository videoLikeRepository,
+            @Value("${app.ffmpeg.ffprobe-path}") String ffprobePath
+    ) {
         this.videoRepository = videoRepository;
         this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
+        this.videoLikeRepository = videoLikeRepository;
         this.ffprobePath = ffprobePath;
     }
 
@@ -126,5 +137,57 @@ public class VideoService {
         return headers.getRange().stream().findFirst()
                 .map(range -> range.toResourceRegion(videoResource))
                 .orElseGet(() -> new ResourceRegion(videoResource, 0, Math.min(1_000_000, contentLength)));
+    }
+
+    public VideoDetailResponse getVideoDetail(Long videoId) {
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", videoId));
+
+        video.setViewCount(video.getViewCount() + 1);
+        videoRepository.save(video);
+
+        long likeCount = videoLikeRepository.countByVideo_VideoId(videoId);
+        long commentCount = commentRepository.countByVideo_VideoId(videoId);
+
+        VideoUploadResponse videoInfo = new VideoUploadResponse(
+                video.getVideoId(),
+                video.getVideoName(),
+                video.getDuration(),
+                video.getVideoWidth(),
+                video.getVideoHeight(),
+                video.getCodec(),
+                video.getBitrate()
+        );
+
+        return new VideoDetailResponse(
+                video.getVideoName(),
+                video.getUploader().getName(),
+                videoInfo,
+                video.getViewCount(),
+                likeCount,
+                commentCount,
+                false // myLike — 로그인 여부에 따라 나중에 채우면 됨
+        );
+    }
+
+    /**
+     * 좋아요 토글 (이미 눌렀으면 취소, 안 눌렀으면 등록)
+     * @param videoId 좋아요를 누를 동영상 ID
+     * @param currentUser 요청 사용자
+     * @return 처리 후 좋아요 상태 (true = 눌림, false = 취소됨)
+     */
+    public boolean toggleLike(Long videoId, CustomUserDetails currentUser) {
+        Long userId = currentUser.getId();
+
+        if (videoLikeRepository.existsByVideo_VideoIdAndUser_Id(videoId, userId)) {
+            videoLikeRepository.deleteByVideo_VideoIdAndUser_Id(videoId, userId);
+            return false;
+        }
+
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", videoId));
+        VideoLike videoLike = new VideoLike(video, userRepository.getReferenceById(userId));
+        videoLikeRepository.save(videoLike);
+        return true;
     }
 }
