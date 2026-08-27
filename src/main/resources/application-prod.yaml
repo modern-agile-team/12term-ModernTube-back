@@ -22,3 +22,4 @@ spring:
 app:
   ffmpeg:
     ffprobe-path: /usr/bin/ffprobe
+    ffmpeg-path: /usr/bin/ffmpeg

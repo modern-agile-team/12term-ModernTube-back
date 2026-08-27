@@ -35,6 +35,9 @@ public class Video extends DateAudit {
     @NotNull(message = "비디오 사이즈는 필수 입력입니다.")
     private Long videoSize;
 
+    @Column(name = "THUMBNAIL_PATH")
+    private String thumbnailPath;
+
     @Column(name = "VIDEO_WIDTH")
     private Integer videoWidth;
 
@@ -105,6 +108,14 @@ public class Video extends DateAudit {
 
     public void setVideoSize(Long videoSize) {
         this.videoSize = videoSize;
+    }
+
+    public String getThumbnailPath() {
+        return thumbnailPath;
+    }
+
+    public void setThumbnailPath(String thumbnailPath) {
+        this.thumbnailPath = thumbnailPath;
     }
 
     public Integer getVideoWidth() {

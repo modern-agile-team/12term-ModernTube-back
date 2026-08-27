@@ -55,7 +55,10 @@ public class UserController {
      * @param updateAccountRequest 현재 비밀번호와 변경할 이메일/비밀번호/닉네임 정보를 담은 요청 객체
      * @return 변경 처리 결과를 담은 ApiResponse
      */
-    @Operation(summary = "이메일, 비밀번호, 닉네임 재설정.")
+    @Operation(
+            summary = "이메일, 비밀번호, 닉네임 재설정.",
+            description = "해당 api는 기존 비밀번호를 가지고 이메일, 비밀번호, 닉네임을 변경해주는 api입니다."
+            + "만약 3개의 정보중 변경하지 않을 정보가 있다면 해당 멤버를 null로 처리하면 넘어갈수 있습니다.")
     @PostMapping("/me")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> updateMyAccount(
@@ -81,7 +84,10 @@ public class UserController {
      * @param logOutRequest 로그아웃할 기기 정보를 담은 요청 객체
      * @return 로그아웃 처리 결과를 담은 ApiResponse
      */
-    @Operation(summary = "로그아웃")
+    @Operation(
+            summary = "로그아웃",
+            description = "요청한 deviceId에 해당하는 기기만 로그아웃 처리됩니다 (다른 기기의 로그인 상태에는 영향 없음). "
+                    + "로그아웃 처리 즉시 현재 사용 중이던 accessToken은 재사용이 불가능해집니다.")
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser(@CurrentUser CustomUserDetails customUserDetails,
                                      @Valid @RequestBody LogOutRequest logOutRequest) {
