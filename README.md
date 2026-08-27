@@ -18,7 +18,7 @@
 ## 실행 전 준비
 
 1. **MySQL** — `spring.datasource.url`에 지정된 호스트(현재 `rockylinux-9:3306`)에 `modernTubo_db` 데이터베이스와 계정이 존재해야 함
-2. **ffmpeg/ffprobe** — 로컬에 설치되어 있어야 함 (`brew install ffmpeg`). `VideoService`에 경로가 하드코딩(`/opt/homebrew/bin/ffprobe`)되어 있어서, 다른 환경에 배포 시 경로 확인 필요
+2. **ffmpeg/ffprobe** — 로컬에 설치되어 있어야 함 (`brew install ffmpeg`). 실행 경로는 하드코딩이 아니라 `application-{profile}.yaml`의 `app.ffmpeg.ffprobe-path`/`app.ffmpeg.ffmpeg-path`로 프로필별 관리 (dev는 Homebrew 경로, prod는 Linux 경로)
 3. **jasypt 마스터 비밀번호** — `application.yaml`의 `datasource.url`, `jwt.secret` 등이 `ENC(...)`로 암호화되어 있음. 실행 시 아래처럼 마스터 비밀번호를 반드시 넘겨줘야 함
    ```bash
    JASYPT_ENCRYPTOR_PASSWORD=실제비밀번호 ./gradlew bootRun
@@ -53,9 +53,11 @@
 | GET | `/api/member/roleList` | O (SYSTEM) | 특정 유저 권한 조회 (관리자) |
 | POST | `/api/member/save` | O (SYSTEM) | 회원 등록/수정 (관리자) |
 | GET | `/api/member/check/username`, `/check/email` | O (SYSTEM) | 관리자용 중복 확인 |
-| POST | `/api/videos/upload` | O (USER/ADMIN) | 동영상 업로드 (제목 입력 필수) + 메타데이터 추출 + DB 저장 |
+| POST | `/api/videos/upload` | O (USER/ADMIN) | 동영상 업로드 (제목 필수, 썸네일은 선택) + 메타데이터 추출 + DB 저장 |
+| GET | `/api/videos` | X | 동영상 목록 조회 (페이징, 최신순, 숨김/비활성 제외) |
 | GET | `/api/videos/{id}` | X | 동영상 상세 조회 (제목/업로더/메타데이터/조회수/좋아요수/댓글수), 호출 시 조회수 증가 |
 | GET | `/api/videos/{id}/stream` | X | 동영상 스트리밍 (Range 요청 기반) |
+| GET | `/api/videos/{id}/thumbnail` | X | 동영상 썸네일 이미지 조회 |
 | GET | `/api/videos/{id}/comments` | X | 댓글 목록 조회 (페이징) |
 | POST | `/api/videos/{id}/comments` | O (USER/ADMIN) | 댓글 작성 |
 | POST | `/api/videos/{id}/like` | O (USER/ADMIN) | 좋아요 토글 (누르면 등록, 다시 누르면 취소) |
@@ -74,9 +76,13 @@ Swagger UI: `http://localhost:8080/swagger-ui.html`
 1. `POST /api/videos/upload` — 로그인 필요, 제목(`title`)과 함께 `video/*` 타입만 허용 (현재 최대 1GB, `application.yaml`의 `multipart.max-file-size`로 조정 가능)
 2. `./streams` 폴더에 `{timestamp}_{원본파일명}`으로 저장 (디스크 저장용 파일명이며, 사용자에게 노출되는 제목과는 별개)
 3. ffprobe로 duration/width/height/codec/bitrate 추출
-4. `VIDEOS` 테이블에 업로더(FK)와 함께 저장, 저장된 정보를 응답으로 반환
+4. 썸네일: 업로드 시 이미지(`thumbnail`)를 직접 첨부했으면 그 이미지를 그대로 저장하고, 첨부하지 않았으면 지정한 시점(`thumbnailTimestamp`, 초 단위, 미지정 시 기본값 1초)의 프레임을 ffmpeg로 추출해서 저장
+5. `VIDEOS` 테이블에 업로더(FK)와 함께 저장, 저장된 정보를 응답으로 반환
 
-**알려진 제약**: 메타데이터 추출(ffprobe)이 실패하면 DB에는 기록이 안 남지만, 파일은 이미 디스크에 저장된 뒤라 `streams/`에 고아 파일이 남을 수 있음.
+## 동영상 목록 / 썸네일
+
+- `GET /api/videos`는 숨김(`isHidden`)/비활성(`isActive`) 처리된 영상을 제외하고 최신순으로 페이징 조회 (업로더 정보는 N+1 방지를 위해 `JOIN FETCH`로 함께 조회)
+- 목록 응답의 `thumbnailUrl`은 로컬 파일 경로가 아니라 `GET /api/videos/{id}/thumbnail` API 경로 형태로 내려가며, 프론트는 이 값을 그대로 `<img src>`에 사용하면 됨 (썸네일이 없는 영상은 `null`)
 
 ## 동영상 상세 조회 / 댓글 / 좋아요
 
