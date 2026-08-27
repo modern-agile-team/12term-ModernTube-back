@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourceRegion;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -49,7 +50,7 @@ public class VideoController {
             @RequestParam(value = "thumbnailTimestamp", required = false) Double thumbnailTimestamp,
             @CurrentUser CustomUserDetails currentUser
     ) {
-        VideoUploadResponse response = videoService.uploadVideo(file, title, currentUser);
+        VideoUploadResponse response = videoService.uploadVideo(file, title, thumbnailFile, thumbnailTimestamp, currentUser);
         return ResponseEntity.ok(new ApiResponse(true, response));
     }
 
@@ -67,12 +68,24 @@ public class VideoController {
                 .body(region);
     }
 
+    @Operation(summary = "동영상 썸네일 조회")
+    @GetMapping("/{id}/thumbnail")
+    public ResponseEntity<Resource> getThumbnail(
+            @Parameter(description = "썸네일을 조회할 동영상 ID", required = true)
+            @PathVariable Long id
+    ) {
+        Resource thumbnail = videoService.getThumbnailResource(id);
+        return ResponseEntity.ok()
+                .contentType(MediaTypeFactory.getMediaType(thumbnail).orElse(MediaType.IMAGE_JPEG))
+                .body(thumbnail);
+    }
+
     @GetMapping
     public ResponseEntity<?> getVideoList(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(new ApiResponse(true, "제작중..."));
+        return ResponseEntity.ok(new ApiResponse(true, videoService.getVideoList(page, size)));
     }
 
     @Operation(summary = "동영상 상세 조회")

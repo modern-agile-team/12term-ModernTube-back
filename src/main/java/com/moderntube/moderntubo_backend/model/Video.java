@@ -110,6 +110,14 @@ public class Video extends DateAudit {
         this.videoSize = videoSize;
     }
 
+    public String getThumbnailPath() {
+        return thumbnailPath;
+    }
+
+    public void setThumbnailPath(String thumbnailPath) {
+        this.thumbnailPath = thumbnailPath;
+    }
+
     public Integer getVideoWidth() {
         return videoWidth;
     }
