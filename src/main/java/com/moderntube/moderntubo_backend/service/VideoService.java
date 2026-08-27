@@ -5,12 +5,15 @@ import com.moderntube.moderntubo_backend.exception.UploadException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
 import com.moderntube.moderntubo_backend.model.Video;
 import com.moderntube.moderntubo_backend.model.VideoLike;
+import com.moderntube.moderntubo_backend.model.payload.response.PagedResponse;
 import com.moderntube.moderntubo_backend.model.payload.response.VideoDetailResponse;
+import com.moderntube.moderntubo_backend.model.payload.response.VideoListResponse;
 import com.moderntube.moderntubo_backend.model.payload.response.VideoUploadResponse;
 import com.moderntube.moderntubo_backend.repository.CommentRepository;
 import com.moderntube.moderntubo_backend.repository.UserRepository;
 import com.moderntube.moderntubo_backend.repository.VideoLikeRepository;
 import com.moderntube.moderntubo_backend.repository.VideoRepository;
+import com.moderntube.moderntubo_backend.util.ValidatePageNumberAndSize;
 import lombok.extern.slf4j.Slf4j;
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
@@ -20,6 +23,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourceRegion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -193,5 +201,13 @@ public class VideoService {
         VideoLike videoLike = new VideoLike(video, userRepository.getReferenceById(userId));
         videoLikeRepository.save(videoLike);
         return true;
+    }
+
+    private PagedResponse<VideoListResponse> getVideoList(int page, int size) {
+        ValidatePageNumberAndSize.validatePageNumberAndSize(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "createAt");
+        Page<Video> videos = videoRepository.findByIsHiddenFalseAndIsActiveTrue(pageable);
+
+        return new PagedResponse<>();
     }
 }

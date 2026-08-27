@@ -45,6 +45,8 @@ public class VideoController {
             @RequestParam("video") MultipartFile file,
             @Parameter(description = "동영상 제목", required = true)
             @RequestParam("title") @NotBlank(message = "제목을 입력해주세요.") String title,
+            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnailFile,
+            @RequestParam(value = "thumbnailTimestamp", required = false) Double thumbnailTimestamp,
             @CurrentUser CustomUserDetails currentUser
     ) {
         VideoUploadResponse response = videoService.uploadVideo(file, title, currentUser);
@@ -63,6 +65,14 @@ public class VideoController {
         return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
                 .contentType(MediaTypeFactory.getMediaType(region.getResource()).orElse(MediaType.APPLICATION_OCTET_STREAM))
                 .body(region);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getVideoList(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(new ApiResponse(true, "제작중..."));
     }
 
     @Operation(summary = "동영상 상세 조회")

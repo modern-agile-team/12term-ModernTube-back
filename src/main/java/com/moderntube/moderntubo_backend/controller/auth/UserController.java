@@ -58,7 +58,7 @@ public class UserController {
     @Operation(
             summary = "이메일, 비밀번호, 닉네임 재설정.",
             description = "해당 api는 기존 비밀번호를 가지고 이메일, 비밀번호, 닉네임을 변경해주는 api입니다."
-            + "만약 3개의 정보중 변경하지 않을 정보가 있다면 해당 멤버를 null로 처리하면 넘어간다.")
+            + "만약 3개의 정보중 변경하지 않을 정보가 있다면 해당 멤버를 null로 처리하면 넘어갈수 있습니다.")
     @PostMapping("/me")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> updateMyAccount(
