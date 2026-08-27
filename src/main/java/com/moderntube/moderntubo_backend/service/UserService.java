@@ -144,11 +144,10 @@ public class UserService {
      * 사용자의 정보를 변경.
      * @param userId 변경할 유저의 고유 ID.
      * @param updateAccountRequest 변경할 내용을 object형으로 받기. null이 있다면 변경을 하지 않는다.
-     * @return 변경 완료 여부를 boolean으로 반환
      */
-    public boolean changeUserInfo(Long userId, UpdateAccountRequest updateAccountRequest) {
+    public void changeUserInfo(Long userId, UpdateAccountRequest updateAccountRequest) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId)); // 여기서 유저를 못 찾으면 예외를 처리해버림.
 
         if (updateAccountRequest.getNewEmail() != null) {
             user.setEmail(updateAccountRequest.getNewEmail());
@@ -161,7 +160,6 @@ public class UserService {
         }
 
         userRepository.save(user);
-        return true;
     }
 
     /**
