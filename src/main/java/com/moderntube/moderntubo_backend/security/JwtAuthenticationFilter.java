@@ -99,6 +99,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String name = cookies[i].getName();
                 String value = cookies[i].getValue();
                 buff.append(name).append(" : ").append(value).append(" ");
+                log.info("cookie value: " + buff);
             }
         } else {
             buff.append("쿠키가 없습니다.");
