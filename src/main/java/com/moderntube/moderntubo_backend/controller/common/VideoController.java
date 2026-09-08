@@ -80,6 +80,7 @@ public class VideoController {
                 .body(thumbnail);
     }
 
+    @Operation(summary = "동영상 페이지 단위로 조회")
     @GetMapping
     public ResponseEntity<?> getVideoList(
             @RequestParam(defaultValue = "0") int page,
