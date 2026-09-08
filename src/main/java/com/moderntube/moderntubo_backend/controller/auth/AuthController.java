@@ -8,10 +8,14 @@ import com.moderntube.moderntubo_backend.model.payload.response.JwtAuthenticatio
 import com.moderntube.moderntubo_backend.model.token.RefreshToken;
 import com.moderntube.moderntubo_backend.security.JwtTokenProvider;
 import com.moderntube.moderntubo_backend.service.AuthService;
+import com.moderntube.moderntubo_backend.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.time.Duration;
 import java.util.Objects;
 
 @RestController
@@ -29,6 +34,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtTokenProvider tokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     /**
      * 이메일 사용여부 확인 메서드
@@ -77,7 +83,10 @@ public class AuthController {
                     + "이메일 인증을 완료하지 않은 계정은 로그인이 거부됩니다."
     )
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(
+            @Valid @RequestBody LoginRequest loginRequest,
+            HttpServletResponse response
+    ) {
         
         log.info("login user >> " + loginRequest.getPassword() + " // " + loginRequest.getUsername());
 
@@ -93,7 +102,17 @@ public class AuthController {
                 .map(RefreshToken::getToken)
                 .map(refreshToken -> {
                     String jwtToken = authService.generateToken(customUserDetails);
-                    return ResponseEntity.ok(new JwtAuthenticationResponse(jwtToken, refreshToken, tokenProvider.getExpiryDuration()));
+
+                    ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                            .httpOnly(true)
+                            .secure(true)
+                            .sameSite("Lax")
+                            .path("/api/auth")
+                            .maxAge(Duration.ofDays(14))
+                            .build();
+                    response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+                    return ResponseEntity.ok(new JwtAuthenticationResponse(jwtToken, null, tokenProvider.getExpiryDuration()));
                 })
                 .orElseThrow(() -> new UserLoginException("Couldn't create refresh token for: [" + loginRequest + "]"));
     }
