@@ -35,6 +35,17 @@ public class AuthController {
     private final AuthService authService;
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final boolean cookieSecure;
+
+    public AuthController(
+            AuthService authService, JwtTokenProvider tokenProvider, RefreshTokenService refreshTokenService,
+            @Value("${app.cookie.secure}") boolean cookieSecure
+    ) {
+        this.authService = authService;
+        this.tokenProvider = tokenProvider;
+        this.refreshTokenService = refreshTokenService;
+        this.cookieSecure = cookieSecure;
+    }
 
     /**
      * 이메일 사용여부 확인 메서드
@@ -105,7 +116,7 @@ public class AuthController {
 
                     ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
                             .httpOnly(true)
-                            .secure(true)
+                            .secure(cookieSecure) // 현재 테스트중이므로 https를 무시
                             .sameSite("Lax")
                             .path("/api/auth")
                             .maxAge(Duration.ofDays(14))

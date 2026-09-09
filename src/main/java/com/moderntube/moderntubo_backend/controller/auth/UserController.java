@@ -10,9 +10,12 @@ import com.moderntube.moderntubo_backend.model.payload.response.ApiResponse;
 import com.moderntube.moderntubo_backend.model.payload.response.UserResponse;
 import com.moderntube.moderntubo_backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.AllArgsConstructor;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,12 +29,23 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/api/user")
 @Slf4j
-@AllArgsConstructor
 public class UserController {
 
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final boolean cookieSecure;
+
+    public UserController(
+            PasswordEncoder passwordEncoder, UserService userService, ApplicationEventPublisher applicationEventPublisher,
+            @Value("${app.cookie.secure}") boolean cookieSecure
+    ) {
+        this.passwordEncoder = passwordEncoder;
+        this.userService = userService;
+        this.applicationEventPublisher = applicationEventPublisher;
+        this.cookieSecure = cookieSecure;
+
+    }
 
     /**
      * 로그인 된 사용자 본인의 프로필 정보를 조회한다.
@@ -89,8 +103,11 @@ public class UserController {
             description = "요청한 deviceId에 해당하는 기기만 로그아웃 처리됩니다 (다른 기기의 로그인 상태에는 영향 없음). "
                     + "로그아웃 처리 즉시 현재 사용 중이던 accessToken은 재사용이 불가능해집니다.")
     @PostMapping("/logout")
-    public ResponseEntity<?> logoutUser(@CurrentUser CustomUserDetails customUserDetails,
-                                     @Valid @RequestBody LogOutRequest logOutRequest) {
+    public ResponseEntity<?> logoutUser(
+            @CurrentUser CustomUserDetails customUserDetails,
+            @Valid @RequestBody LogOutRequest logOutRequest,
+            HttpServletResponse response
+    ) {
         log.info(customUserDetails.toString());
         log.info(logOutRequest.toString());
         userService.logoutUser(customUserDetails, logOutRequest);
@@ -98,6 +115,16 @@ public class UserController {
 
         OnUserLogoutSuccessEvent logoutSuccessEvent = new OnUserLogoutSuccessEvent(customUserDetails.getEmail(), Objects.requireNonNull(credentials).toString(), logOutRequest);
         applicationEventPublisher.publishEvent(logoutSuccessEvent);
+
+        ResponseCookie expiredCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Lax")
+                .path("/api/auth")
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, expiredCookie.toString());
+
         return ResponseEntity.ok(new ApiResponse(true, "로그아웃 되었습니다."));
     }
 
