@@ -12,8 +12,8 @@ import com.moderntube.moderntubo_backend.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -29,21 +29,18 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/api/auth")
 @Slf4j
-@AllArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
     private final JwtTokenProvider tokenProvider;
-    private final RefreshTokenService refreshTokenService;
     private final boolean cookieSecure;
 
     public AuthController(
-            AuthService authService, JwtTokenProvider tokenProvider, RefreshTokenService refreshTokenService,
+            AuthService authService, JwtTokenProvider tokenProvider,
             @Value("${app.cookie.secure}") boolean cookieSecure
     ) {
         this.authService = authService;
         this.tokenProvider = tokenProvider;
-        this.refreshTokenService = refreshTokenService;
         this.cookieSecure = cookieSecure;
     }
 
@@ -98,7 +95,7 @@ public class AuthController {
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletResponse response
     ) {
-        
+
         log.info("login user >> " + loginRequest.getPassword() + " // " + loginRequest.getUsername());
 
         Authentication authentication = authService.authenticateUser(loginRequest)
@@ -129,28 +126,34 @@ public class AuthController {
     }
 
     /**
-     * 특정 장치에 대한 refresh token 을 사용하여 만료된 jwt token 을 갱신 후 새로운 token 을 반환
-     * @param tokenRefreshRequest 토큰 갱신에 사용할 refresh token을 담은 요청 객체
-     * @return 재발급된 accessToken과 기존 refreshToken을 담은 JwtAuthenticationResponse
+     *
+     * @param refreshToken
+     * @return
      */
     @Operation(
             summary = "리프레시 토큰",
-            description = "accessToken이 만료되었을 때, 로그인 시 발급받은 refreshToken으로 새 accessToken을 재발급받습니다. "
-                    + "refreshToken은 로그인했던 기기마다 다르게 발급되므로, 반드시 해당 기기가 로그인할 때 받았던 "
-                    + "refreshToken을 그대로 사용해야 합니다."
+            description = "accessToken이 만료되었을 때 호출합니다. refreshToken은 로그인 시 httpOnly 쿠키로 저장되어 "
+                    + "서버가 자동으로 읽으므로, 별도의 요청 바디 없이 이 API만 호출하면 됩니다 (요청 시 쿠키가 함께 "
+                    + "전달되도록 credentials 포함 설정이 필요합니다). 성공하면 새로 발급된 accessToken을 반환합니다."
     )
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshJwtToken(@Valid @RequestBody TokenRefreshRequest tokenRefreshRequest) {
+    public ResponseEntity<?> refreshJwtToken(
+            @Parameter(hidden = true)
+            @CookieValue(value = "refreshToken", required = false) String refreshToken
+    ) {
+        if (refreshToken == null) {
+            throw new TokenRefreshException(null, "refreshToken 쿠키가 없습니다. 다시 로그인 해 주세요.");
+        }
+        TokenRefreshRequest tokenRefreshRequest = new TokenRefreshRequest(refreshToken);
 
-        log.info(tokenRefreshRequest.toString());
-
+        log.info(refreshToken);
         return authService.refreshJwtToken(tokenRefreshRequest)
                 .map(updatedToken -> {
-                    String refreshToken = tokenRefreshRequest.getRefreshToken();
                     log.info("Created new Jwt Auth token: " + updatedToken);
-                    return ResponseEntity.ok(new JwtAuthenticationResponse(updatedToken, refreshToken, tokenProvider.getExpiryDuration()));
+
+                    return ResponseEntity.ok(new JwtAuthenticationResponse(updatedToken, null, tokenProvider.getExpiryDuration()));
                 })
-                .orElseThrow(() -> new TokenRefreshException(tokenRefreshRequest.getRefreshToken(), "토큰 갱신 중 오류가 발생했습니다. 다시 로그인 해 주세요."));
+                .orElseThrow(() -> new TokenRefreshException(refreshToken, "토큰 갱신 중 오류가 발생했습니다. 다시 로그인 해 주세요."));
     }
 
     /**
