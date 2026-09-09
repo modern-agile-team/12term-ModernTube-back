@@ -20,5 +20,8 @@ spring:
         format_sql: true
 
 app:
+  cors:
+    # 프론트엔드 주소 지정. (예시는 아래처럼)
+    allowed-origins: http://localhost:8080
   ffmpeg:
     ffprobe-path: /usr/bin/ffprobe
