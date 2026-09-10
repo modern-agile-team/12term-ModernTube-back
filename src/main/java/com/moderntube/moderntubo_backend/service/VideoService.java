@@ -1,5 +1,6 @@
 package com.moderntube.moderntubo_backend.service;
 
+import com.moderntube.moderntubo_backend.cache.ViewCountCache;
 import com.moderntube.moderntubo_backend.exception.ResourceNotFoundException;
 import com.moderntube.moderntubo_backend.exception.UploadException;
 import com.moderntube.moderntubo_backend.model.CustomUserDetails;
@@ -53,19 +54,21 @@ public class VideoService {
     private final VideoLikeRepository videoLikeRepository;
     private final String ffprobePath;
     private final String ffmpegPath;
+    private final ViewCountCache viewCountCache;
 
     public VideoService(
             VideoRepository videoRepository, UserRepository userRepository,
             CommentRepository commentRepository, VideoLikeRepository videoLikeRepository,
             @Value("${app.ffmpeg.ffprobe-path}") String ffprobePath,
-            @Value("${app.ffmpeg.ffmpeg-path}") String ffmpegPath
-    ) {
+            @Value("${app.ffmpeg.ffmpeg-path}") String ffmpegPath,
+            ViewCountCache viewCountCache) {
         this.videoRepository = videoRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.videoLikeRepository = videoLikeRepository;
         this.ffprobePath = ffprobePath;
         this.ffmpegPath = ffmpegPath;
+        this.viewCountCache = viewCountCache;
     }
 
     public VideoUploadResponse uploadVideo(
@@ -204,12 +207,18 @@ public class VideoService {
                 .orElseGet(() -> new ResourceRegion(videoResource, 0, Math.min(1_000_000, contentLength)));
     }
 
-    public VideoDetailResponse getVideoDetail(Long videoId) {
+    public VideoDetailResponse getVideoDetail(Long videoId, CustomUserDetails currentUser, String clientIp) {
         Video video = videoRepository.findById(videoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Video", "id", videoId));
 
-        video.setViewCount(video.getViewCount() + 1);
-        videoRepository.save(video);
+        boolean isNewView = (currentUser != null)
+                ? viewCountCache.isNewView(currentUser.getId(), videoId)
+                : viewCountCache.isNewView(clientIp, videoId);
+
+        if (isNewView) {
+            video.setViewCount(video.getViewCount() + 1);
+            videoRepository.save(video);
+        }
 
         long likeCount = videoLikeRepository.countByVideo_VideoId(videoId);
         long commentCount = commentRepository.countByVideo_VideoId(videoId);
