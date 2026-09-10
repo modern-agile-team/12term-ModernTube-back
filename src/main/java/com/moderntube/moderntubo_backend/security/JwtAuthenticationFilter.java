@@ -85,26 +85,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * @return
      */
     private String getJwtFromRequest(HttpServletRequest request) {
-//        String bearerToken = request.getHeader(tokenRequestHeader);
-//        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(tokenRequestHeaderPrefix)) {
-//            log.info("Extracted Token: " + bearerToken);
-//            return bearerToken.replace(tokenRequestHeaderPrefix, "").trim();
-//        }
-
-        Cookie[] cookies = request.getCookies();
-        StringBuilder buff = new StringBuilder();
-
-        if (cookies != null) {
-            for (int i = 0; i < cookies.length; i++) {
-                String name = cookies[i].getName();
-                String value = cookies[i].getValue();
-                buff.append(name).append(" : ").append(value).append(" ");
-                log.info("cookie value: " + buff);
-            }
-        } else {
-            buff.append("쿠키가 없습니다.");
+        String bearerToken = request.getHeader(tokenRequestHeader);
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(tokenRequestHeaderPrefix)) {
+            log.info("Extracted Token: " + bearerToken);
+            return bearerToken.replace(tokenRequestHeaderPrefix, "").trim();
         }
-
-        return buff.toString();
+        return null;
     }
 }
