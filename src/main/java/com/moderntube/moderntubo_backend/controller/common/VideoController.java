@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -80,6 +80,7 @@ public class VideoController {
                 .body(thumbnail);
     }
 
+    @Operation(summary = "동영상 페이지 단위로 조회")
     @GetMapping
     public ResponseEntity<?> getVideoList(
             @RequestParam(defaultValue = "0") int page,
@@ -89,9 +90,12 @@ public class VideoController {
     }
 
     @Operation(summary = "동영상 상세 조회")
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getVideoDetail(@PathVariable Long id) {
-        VideoDetailResponse response = videoService.getVideoDetail(id);
+    @GetMapping("/{videoId}")
+    public ResponseEntity<?> getVideoDetail(
+            @PathVariable Long videoId, @CurrentUser CustomUserDetails currentUser, HttpServletRequest request
+    ) {
+        String clientIp = getClientIp(request);
+        VideoDetailResponse response = videoService.getVideoDetail(videoId, currentUser, clientIp);
         return ResponseEntity.ok(new ApiResponse(true, response));
     }
 
@@ -124,5 +128,13 @@ public class VideoController {
             @CurrentUser CustomUserDetails currentUser) {
         boolean liked = videoService.toggleLike(id, currentUser);
         return ResponseEntity.ok(new ApiResponse(true, liked ? "좋아요를 눌렀습니다." : "좋아요를 취소했습니다."));
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

@@ -14,6 +14,7 @@
 package com.moderntube.moderntubo_backend.security;
 
 import com.moderntube.moderntubo_backend.service.CustomUserDetailsService;
+import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
