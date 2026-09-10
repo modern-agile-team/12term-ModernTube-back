@@ -13,7 +13,7 @@
 - **jasypt-spring-boot-starter 4.0.4** — `application.yaml` 민감 정보 암호화
 - **net.bramp.ffmpeg 0.9.2** (+ 시스템 ffmpeg/ffprobe) — 업로드된 영상의 메타데이터(길이/해상도/코덱/비트레이트) 추출
 - **spring-boot-starter-mail** — Gmail SMTP를 통한 이메일 인증번호 발송
-- **Spring Data Redis** — 이메일 인증번호/로그인 시도 제한 등 TTL 기반 데이터 저장
+- **Spring Data Redis** — 이메일 인증번호/로그인 시도 제한/조회수 중복 방지 등 TTL 기반 데이터 저장
 
 ## 실행 전 준비
 
@@ -30,9 +30,11 @@
 ## 인증 구조
 
 - 로그인 성공 시 **accessToken(JWT)** + **refreshToken**을 발급
-- accessToken은 `Authorization: Bearer <token>` 헤더로 전달
+- accessToken은 응답 바디로 내려가며, 이후 요청의 `Authorization: Bearer <token>` 헤더로 전달
+- refreshToken은 응답 바디에 노출되지 않고 **httpOnly Set-Cookie**(`refreshToken`, `path=/api/auth`)로만 전달됨 — 자바스크립트가 값을 읽을 수 없어 XSS로부터 보호됨. `POST /api/auth/refresh` 호출 시 서버가 이 쿠키를 자동으로 읽어 처리하므로 프론트는 별도 바디 없이 요청만 보내면 됨 (cross-origin이면 `credentials: 'include'` 필요)
+- 쿠키의 `secure` 속성은 dev/create 프로필은 `false`(http), prod 프로필은 `true`(https)로 분리 설정됨 (`app.cookie.secure`)
 - `deviceId`/`deviceType`/`notificationToken`으로 구성된 `DeviceInfo`를 로그인 요청에 같이 보내야 함 — 기기별로 refresh token을 독립적으로 관리하기 위함 (다중 기기 로그인 지원, 한 기기 로그아웃이 다른 기기에 영향 없음)
-- 로그아웃 시 해당 토큰을 `LoggedOutJwtTokenCache`(현재 인메모리 `ExpiringMap` 기반)에 등록해 만료 전에도 재사용을 막음. **다중 서버로 확장 시 Redis로 교체 필요** (지금은 서버 1대 기준)
+- 로그아웃 시 해당 accessToken을 `LoggedOutJwtTokenCache`(Redis 기반)에 등록해 만료 전에도 재사용을 막고, refreshToken 쿠키도 함께 만료시켜 삭제함
 - 회원가입 직후에는 `isEmailVerified = false` 상태이며, 이메일 인증번호(`/api/auth/send-code`, `/api/auth/verify-code`)로 인증을 완료해야 로그인 가능 (`CustomUserDetails.isEnabled()`가 `emailVerified`를 체크해서 Spring Security가 자동으로 로그인을 막음)
 - 로그인 실패가 5회 누적되면 5분간 해당 계정 로그인이 차단됨 (`LoginAttemptCache`, Redis 기반)
 
@@ -43,7 +45,7 @@
 | GET | `/api/auth/check/email` | X | 이메일 중복 확인 |
 | GET | `/api/auth/check/username` | X | 아이디 중복 확인 |
 | POST | `/api/auth/login` | X | 로그인 (accessToken/refreshToken 발급) |
-| POST | `/api/auth/refresh` | X | refreshToken으로 accessToken 재발급 |
+| POST | `/api/auth/refresh` | X | refreshToken(httpOnly 쿠키)으로 accessToken 재발급, 별도 바디 불필요 |
 | POST | `/api/auth/register` | X | 회원가입 |
 | POST | `/api/auth/send-code` | X | 이메일 인증번호 발송 (60초 재전송 쿨다운) |
 | POST | `/api/auth/verify-code` | X | 이메일 인증번호 검증 (성공 시 `isEmailVerified = true`) |
@@ -86,7 +88,8 @@ Swagger UI: `http://localhost:8080/swagger-ui.html`
 
 ## 동영상 상세 조회 / 댓글 / 좋아요
 
-- `GET /api/videos/{id}` 호출 시 제목, 업로더, 메타데이터, 조회수, 좋아요수, 댓글수를 함께 반환하며, 호출될 때마다 조회수가 1씩 증가함 (새로고침 스팸으로 인한 중복 카운트 방지 로직은 아직 없음)
+- `GET /api/videos/{id}` 호출 시 제목, 업로더, 메타데이터, 조회수, 좋아요수, 댓글수를 함께 반환함
+- 조회수는 같은 사용자(로그인 시 `userId`, 비로그인 시 클라이언트 IP)가 3분 이내 같은 영상을 재조회해도 중복 집계되지 않음 (`ViewCountCache`, Redis `SETNX` 기반)
 - 댓글은 `Comment` 엔티티(video FK, user FK, content)로 관리하며, 상세 조회 API와 분리된 페이징 API(`GET /api/videos/{id}/comments`)로 목록을 제공
 - 좋아요는 `VideoLike`(video_id + user_id 복합키)로 중복 좋아요를 방지하며, `POST /api/videos/{id}/like`로 토글(누르면 등록, 다시 누르면 취소) 처리
 - 좋아요/댓글 개수는 별도 컬럼 없이 매번 COUNT 쿼리로 집계 (트래픽이 늘어나면 비정규화 고려 필요)
