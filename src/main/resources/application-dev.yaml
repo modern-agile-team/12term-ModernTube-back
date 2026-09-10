@@ -22,7 +22,7 @@ spring:
 app:
   cors:
     # 프론트엔드 주소 지정. (예시는 아래처럼)
-    allowed-origins: http://localhost:8080
+    allowed-origins: http://localhost:8080 http://127.0.0.1:8080
   cookie:
     secure: false
   ffmpeg:
