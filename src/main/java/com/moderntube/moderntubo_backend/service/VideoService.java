@@ -73,7 +73,7 @@ public class VideoService {
 
     public VideoUploadResponse uploadVideo(
             MultipartFile file, String title, MultipartFile thumbnailFile,
-            Double thumbnailTimestamp, CustomUserDetails currentUser
+            Double thumbnailTimestamp, Boolean videoIsHidden, CustomUserDetails currentUser
     ) {
         if (file.isEmpty()) {
             throw new UploadException("파일이 없습니다.");
@@ -101,7 +101,7 @@ public class VideoService {
 
         log.info("동영상 업로드 완료: {}", filename);
 
-        Video video = buildVideo(filename, title, file, thumbnailFile, thumbnailTimestamp, targetPath, currentUser);
+        Video video = buildVideo(filename, title, file, thumbnailFile, thumbnailTimestamp, targetPath, videoIsHidden, currentUser);
         Video savedVideo = videoRepository.save(video);
 
         return new VideoUploadResponse(
@@ -111,13 +111,14 @@ public class VideoService {
                 savedVideo.getVideoWidth(),
                 savedVideo.getVideoHeight(),
                 savedVideo.getCodec(),
-                savedVideo.getBitrate()
+                savedVideo.getBitrate(),
+                savedVideo.isHidden()
         );
     }
 
     private Video buildVideo(
             String filename, String title, MultipartFile file, MultipartFile thumbnailFile,
-            Double thumbnailTimestamp, Path videoPath, CustomUserDetails currentUser
+            Double thumbnailTimestamp, Path videoPath, Boolean videoIsHidden, CustomUserDetails currentUser
     ) {
         try {
             FFprobe ffprobe = new FFprobe(ffprobePath);
@@ -139,7 +140,7 @@ public class VideoService {
             video.setDuration(result.getFormat().duration);
             video.setBitrate(result.getFormat().bit_rate);
             video.setCodec(videoStream.codec_name);
-            video.setHidden(false);
+            video.setHidden(Boolean.TRUE.equals(videoIsHidden));
             video.setActive(true);
             video.setDuration(result.getFormat().duration);
 
@@ -189,9 +190,8 @@ public class VideoService {
         return thumbnailPath.toString();
     }
 
-    public ResourceRegion createRegion(Long id, HttpHeaders headers) {
-        Video video = videoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", id));
+    public ResourceRegion createRegion(Long id, HttpHeaders headers, CustomUserDetails currentUser) {
+        Video video = findAccessibleVideo(id, currentUser);
 
         Resource videoResource = new FileSystemResource(video.getFilePath());
 
@@ -208,8 +208,7 @@ public class VideoService {
     }
 
     public VideoDetailResponse getVideoDetail(Long videoId, CustomUserDetails currentUser, String clientIp) {
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", videoId));
+        Video video = findAccessibleVideo(videoId, currentUser);
 
         boolean isNewView = (currentUser != null)
                 ? viewCountCache.isNewView(currentUser.getId(), videoId)
@@ -230,7 +229,8 @@ public class VideoService {
                 video.getVideoWidth(),
                 video.getVideoHeight(),
                 video.getCodec(),
-                video.getBitrate()
+                video.getBitrate(),
+                video.isHidden()
         );
 
         return new VideoDetailResponse(
@@ -251,6 +251,7 @@ public class VideoService {
      * @return 처리 후 좋아요 상태 (true = 눌림, false = 취소됨)
      */
     public boolean toggleLike(Long videoId, CustomUserDetails currentUser) {
+        Video video = findAccessibleVideo(videoId, currentUser);
         Long userId = currentUser.getId();
 
         if (videoLikeRepository.existsByVideo_VideoIdAndUser_Id(videoId, userId)) {
@@ -258,10 +259,7 @@ public class VideoService {
             return false;
         }
 
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", videoId));
-        VideoLike videoLike = new VideoLike(video, userRepository.getReferenceById(userId));
-        videoLikeRepository.save(videoLike);
+        videoLikeRepository.save(new VideoLike(video, userRepository.getReferenceById(userId)));
         return true;
     }
 
@@ -280,9 +278,8 @@ public class VideoService {
         );
     }
 
-    public Resource getThumbnailResource(Long videoId) {
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", videoId));
+    public Resource getThumbnailResource(Long videoId, CustomUserDetails currentUser) {
+        Video video = findAccessibleVideo(videoId, currentUser);
 
         if (video.getThumbnailPath() == null) {
             throw new ResourceNotFoundException("Thumbnail", "videoId", videoId);
@@ -300,5 +297,24 @@ public class VideoService {
 
         return new PagedResponse<>(content, videos.getNumber(), videos.getSize(),
                 videos.getTotalElements(), videos.getTotalPages(), videos.isLast());
+    }
+
+    /**
+     * 비디오 객체를 받을때 히든이 숨김으로 되어있으면 해당 목록은 노출 시키지 않는다.
+     * @param videoId
+     * @param currentUser
+     * @return
+     */
+    public Video findAccessibleVideo(Long videoId, CustomUserDetails currentUser) {
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", videoId));
+
+        boolean isOwner = currentUser != null && currentUser.getId().equals(video.getUploader().getId());
+
+        if (!video.isActive() || (video.isHidden() && !isOwner)) {
+            throw new ResourceNotFoundException("Video", "id", videoId);
+        }
+
+        return video;
     }
 }
