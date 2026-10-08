@@ -118,6 +118,23 @@ public class AuthService {
     }
 
     /**
+     * 테스트 계정을 생성하기 위한 서비스.
+     * 위에 있는 registerUser와 동일한 구조이지만 검증을 빼고 생성함.
+     * @param newRegistrationRequest
+     * @return
+     */
+    public Optional<User> createTestAccount(RegistrationRequest newRegistrationRequest) {
+        String newRegistrationRequestEmail = newRegistrationRequest.getEmail();
+
+        log.info("Trying to register new user [" + newRegistrationRequestEmail + "]");
+        log.info(newRegistrationRequest.toString());
+        User newUser = userService.createUser(newRegistrationRequest);
+        newUser.setEmailVerified(true);
+        User registrationRequest = userService.save(newUser);
+        return Optional.ofNullable(registrationRequest);
+    }
+
+    /**
      * 회원 가입시 이메일 중복인지 검사
      * 이메일이 이미 있으면 true 아니면 false
      * @param email

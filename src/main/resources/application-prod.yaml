@@ -23,6 +23,8 @@ spring:
         format_sql: true
 
 app:
+  test-data:
+    enabled: false
   cors:
     # 프론트엔드 주소 지정. (예시는 아래처럼)
     allowed-origins: https://moderntube.o-r.kr,https://www.moderntube.o-r.kr,https://api.moderntube.o-r.kr
