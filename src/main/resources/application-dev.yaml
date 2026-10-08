@@ -6,9 +6,9 @@ spring:
       password: ENC(lTjzrWP7PZds21KYenlp0ZBgsQLJNvaeXXfVnJ858RVLwB7iUxJbYv/OqaIqG6mG)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ENC(l3DKkA5HjpGi/58cQ9cQNU9p29xTN2vlqIIxw9kFbEHrV+ZcJEWn6seA1yMjN7MH)
-    password: ENC(c7fkLk4ia8YVLPJ9lf0dY+BY2B1vHgsqhJzIIbgO+k5LXJfoHUeLGkKqOuHtCkH7)
-    url: ENC(5GNJxG0qqMtajwz0XLAdfPn1QsXPRbTWYVxZD3BRF3a1Ec6rWCl3k7bPwh0F6zCBBwIlTT7bXeJgKboP1vuLfVlJDkf5/BtSZcNGDHnrd1U=)
+    username: ENC(BEy42TlUKXQSzov6I5QvmKb6rUHjnhJXsN1lyyw2laJacwi0vHDWJrsFEMDmf7D3)
+    password: ENC(6oHe8SOxePkj9cT5zNHzbWpSmGDypAjPa9rIhQJS5G6JbNjIXsrT+/99Hr9PXsuJ)
+    url: ENC(M65McLkmR/PVIUfmY3gc1jEWQ69B6qqidd/jcUa4RB19XGNHKTu+95uRDd8DCFBXWuhh0oI/44eAZ1He96/Qu4DixDNZIh1p3ByQByi90Bk=)
   jpa:
     hibernate:
       ddl-auto: update
@@ -20,9 +20,11 @@ spring:
         format_sql: true
 
 app:
+  test-data:
+    enabled: true
   cors:
     # 프론트엔드 주소 지정. (예시는 아래처럼)
-    allowed-origins: http://localhost:8080 http://127.0.0.1:8080
+    allowed-origins: http://localhost:*,http://127.0.0.1:*
   cookie:
     secure: false
   ffmpeg:

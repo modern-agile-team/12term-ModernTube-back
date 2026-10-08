@@ -13,7 +13,6 @@ import com.moderntube.moderntubo_backend.service.VideoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -39,7 +38,7 @@ public class VideoController {
 
     @Operation(summary = "동영상을 업로드")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE))
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> uploadVideo(
             @Parameter(description = "업로드할 동영상 파일", required = true)
@@ -48,9 +47,10 @@ public class VideoController {
             @RequestParam("title") @NotBlank(message = "제목을 입력해주세요.") String title,
             @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnailFile,
             @RequestParam(value = "thumbnailTimestamp", required = false) Double thumbnailTimestamp,
+            @RequestParam(value = "videoIsHidden", required = false) Boolean videoIsHidden,
             @CurrentUser CustomUserDetails currentUser
     ) {
-        VideoUploadResponse response = videoService.uploadVideo(file, title, thumbnailFile, thumbnailTimestamp, currentUser);
+        VideoUploadResponse response = videoService.uploadVideo(file, title, thumbnailFile, thumbnailTimestamp, videoIsHidden, currentUser);
         return ResponseEntity.ok(new ApiResponse(true, response));
     }
 
@@ -59,9 +59,10 @@ public class VideoController {
     public ResponseEntity<ResourceRegion> streamVideo(
             @Parameter(description = "스트리밍할 동영상 ID", required = true)
             @PathVariable Long id,
-            @RequestHeader HttpHeaders headers
+            @RequestHeader HttpHeaders headers,
+            @CurrentUser CustomUserDetails currentUser
     ) {
-        ResourceRegion region = videoService.createRegion(id, headers);
+        ResourceRegion region = videoService.createRegion(id, headers, currentUser);
 
         return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
                 .contentType(MediaTypeFactory.getMediaType(region.getResource()).orElse(MediaType.APPLICATION_OCTET_STREAM))
@@ -72,9 +73,10 @@ public class VideoController {
     @GetMapping("/{id}/thumbnail")
     public ResponseEntity<Resource> getThumbnail(
             @Parameter(description = "썸네일을 조회할 동영상 ID", required = true)
-            @PathVariable Long id
+            @PathVariable Long id,
+            @CurrentUser CustomUserDetails currentUser
     ) {
-        Resource thumbnail = videoService.getThumbnailResource(id);
+        Resource thumbnail = videoService.getThumbnailResource(id, currentUser);
         return ResponseEntity.ok()
                 .contentType(MediaTypeFactory.getMediaType(thumbnail).orElse(MediaType.IMAGE_JPEG))
                 .body(thumbnail);
@@ -104,8 +106,10 @@ public class VideoController {
     public ResponseEntity<?> getComments(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        PagedResponse<CommentResponse> response = commentService.getComments(id, page, size);
+            @RequestParam(defaultValue = "20") int size,
+            @CurrentUser CustomUserDetails currentUser
+    ) {
+        PagedResponse<CommentResponse> response = commentService.getComments(id, page, size, currentUser);
         return ResponseEntity.ok(new ApiResponse(true, response));
     }
 

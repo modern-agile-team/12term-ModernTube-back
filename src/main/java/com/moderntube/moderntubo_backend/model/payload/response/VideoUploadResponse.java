@@ -13,4 +13,5 @@ public class VideoUploadResponse {
     private Integer height;
     private String codec;
     private Long bitrate;
+    private Boolean isHidden;
 }

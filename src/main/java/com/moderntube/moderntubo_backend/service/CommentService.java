@@ -26,6 +26,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
+    private final VideoService videoService;
 
     /**
      * 특정 동영상의 댓글 목록을 페이징으로 조회
@@ -34,7 +35,8 @@ public class CommentService {
      * @param size 페이지 크기
      * @return 댓글 목록을 담은 PagedResponse
      */
-    public PagedResponse<CommentResponse> getComments(Long videoId, int page, int size) {
+    public PagedResponse<CommentResponse> getComments(Long videoId, int page, int size, CustomUserDetails currentUser) {
+        videoService.findAccessibleVideo(videoId, currentUser);
         ValidatePageNumberAndSize.validatePageNumberAndSize(page, size);
 
         Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "createdAt");
@@ -53,8 +55,7 @@ public class CommentService {
      * @param content 댓글 내용
      */
     public void addComment(Long videoId, CustomUserDetails currentUser, String content) {
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Video", "id", videoId));
+        Video video = videoService.findAccessibleVideo(videoId, currentUser);
 
         Comment comment = new Comment();
         comment.setVideo(video);

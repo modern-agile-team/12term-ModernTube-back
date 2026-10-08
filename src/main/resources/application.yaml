@@ -15,6 +15,10 @@ security:
     enable: false
   ignored: /**
 
+springdoc:
+  swagger-ui:
+    persist-authorization: true
+
 spring:
   profiles:
     active: dev
