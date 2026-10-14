@@ -18,7 +18,7 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("modernTubo API")
                         .description("modernTubo_Backend REST API 문서")
-                        .version("v0.1.1"))
+                        .version("v0.6.0"))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .components(new Components()
                         .addSecuritySchemes(SECURITY_SCHEME_NAME, new SecurityScheme()
