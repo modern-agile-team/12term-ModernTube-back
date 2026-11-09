@@ -75,6 +75,7 @@ public class VideoService {
             MultipartFile file, String title, MultipartFile thumbnailFile,
             Double thumbnailTimestamp, Boolean videoIsHidden, CustomUserDetails currentUser
     ) {
+        // 썸네일 사진을 업로드해서 설정이 가능함 다만 썸네일 지정이 없다면 시간으로 설정을 하게 강제해야함.
         if (file.isEmpty()) {
             throw new UploadException("파일이 없습니다.");
         }
@@ -87,6 +88,7 @@ public class VideoService {
         if (contentType == null || !contentType.startsWith("video/")) {
             throw new UploadException("동영상 파일만 업로드가 가능합니다.");
         }
+
 
         String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
         Path targetPath = Paths.get(STORAGE_DIR, filename);
@@ -116,6 +118,18 @@ public class VideoService {
         );
     }
 
+    /**
+     * 동영상 메타데이터 추출 메서드.
+     * @param filename
+     * @param title
+     * @param file
+     * @param thumbnailFile
+     * @param thumbnailTimestamp
+     * @param videoPath
+     * @param videoIsHidden
+     * @param currentUser
+     * @return
+     */
     private Video buildVideo(
             String filename, String title, MultipartFile file, MultipartFile thumbnailFile,
             Double thumbnailTimestamp, Path videoPath, Boolean videoIsHidden, CustomUserDetails currentUser
@@ -154,6 +168,16 @@ public class VideoService {
         }
     }
 
+    /**
+     * 동영상 타임라인 값으로 썸네일을 제작.
+     * @param thumbnailFile
+     * @param timestamp
+     * @param duraion
+     * @param videoPath
+     * @param baseFilename
+     * @return
+     * @throws IOException
+     */
     private String resolveThumbnail(
             MultipartFile thumbnailFile, Double timestamp,
             double duraion, Path videoPath, String baseFilename
@@ -161,6 +185,7 @@ public class VideoService {
         String thumbnailFilename = baseFilename + "_thumb.jpg";
         Path thumbnailPath = Paths.get(STORAGE_DIR, thumbnailFilename);
 
+        // 사용자가 썸네일 파일을 업로드 했는지 감지 후 리턴.
         if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
             if (thumbnailFile.getContentType() == null ||
                     !thumbnailFile.getContentType().startsWith("image/")) {
